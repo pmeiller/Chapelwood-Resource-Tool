@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Chapelwood Resource Finder — Google Apps Script Web Endpoint
+// Chapelwood Resource Finder — Google Apps Script Web Endpoint - Rev 8
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW TO DEPLOY:
 //   1. Open your Google Sheet
@@ -25,11 +25,14 @@ var SPREADSHEET_ID = '1d7gDUulw6TvgbM4XozKZEdAKexXLws0Xv88CVwPDBgQ';
 
 var SHEET_NAME = 'Sheet1'; // Change if your tab has a different name
 
+// Column headers — must match your Google Sheet header row exactly
 var HEADERS = [
   'Resource Name',
   'Organization Name',
-  'Program Name (If Applicable)',
+  'Program Name',
   'Resource Type',
+  'Resource Subtype',
+  'This is a HOT list item',
   'Public Access?',
   'Resource Description',
   'Eligibility',
@@ -46,50 +49,34 @@ var HEADERS = [
   'Verified'
 ];
 
-// Field keys match the full header names used in the admin tool's data objects
-var FIELD_KEYS = [
-  'Resource Name',
-  'Organization Name',
-  'Program Name (If Applicable)',
-  'Resource Type',
-  'Public Access?',
-  'Resource Description',
-  'Eligibility',
-  'Address',
-  'Public Phone Number',
-  'Public Email',
-  'Public Website',
-  'Hours',
-  'Walk-ins?',
-  'Languages',
-  'Application',
-  'Other Info',
-  'Duplicate?',
-  'Verified'
-];
+// FIELD_KEYS must match HEADERS exactly — these are the JSON property names
+// used when reading from and writing to the sheet
+var FIELD_KEYS = HEADERS; // same names, no mapping needed
 
-// ── Handle GET (health check / CORS preflight via redirect) ──────────────────
+// ── Handle GET — returns all rows as a JSON array ────────────────────────────
 function doGet(e) {
   try {
-    var ss = SpreadsheetApp.openById('1d7gDUulw6TvgbM4XozKZEdAKexXLws0Xv88CVwPDBgQ');
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     var sheet = ss.getSheets()[0];
     var data = sheet.getDataRange().getValues();
     if (data.length < 2) {
-      return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+      return jsonResponse([]);
     }
     var headers = data[0];
     var rows = data.slice(1).map(function(row) {
       var obj = {};
-      headers.forEach(function(h, i) { obj[h] = row[i] === '' ? null : String(row[i]); });
+      headers.forEach(function(h, i) {
+        obj[h] = (row[i] === '' || row[i] === null || row[i] === undefined) ? null : String(row[i]);
+      });
       return obj;
     });
-    return ContentService.createTextOutput(JSON.stringify(rows)).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse(rows);
   } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({error: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({ error: err.toString() });
   }
 }
 
-// ── Handle POST (write resources to sheet) ───────────────────────────────────
+// ── Handle POST — writes all resources back to the sheet ─────────────────────
 function doPost(e) {
   try {
     var payload = JSON.parse(e.postData.contents);
@@ -102,23 +89,17 @@ function doPost(e) {
     }
 
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-
-    // Use first sheet regardless of tab name
     var sheet = ss.getSheets()[0];
-    var sheetName = sheet.getName();
 
-    // Always write header row first
-    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
-
-    // Clear all existing data rows
+    // Clear existing data rows (keep header row and formatting)
     var lastRow = sheet.getLastRow();
     if (lastRow > 1) {
       sheet.getRange(2, 1, lastRow - 1, HEADERS.length).clearContent();
     }
 
-    // Build rows from records using full header names as keys
+    // Build rows — use the same header names as keys
     var rows = records.map(function(r) {
-      return FIELD_KEYS.map(function(key) {
+      return HEADERS.map(function(key) {
         var val = r[key];
         return (val === undefined || val === null) ? '' : String(val);
       });
@@ -126,12 +107,17 @@ function doPost(e) {
 
     if (rows.length > 0) {
       sheet.getRange(2, 1, rows.length, HEADERS.length).setValues(rows);
+      SpreadsheetApp.flush();
     }
 
-    // Force flush
-    SpreadsheetApp.flush();
+    // Write headers if row 1 is blank
+    var headerRow = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+    var hasHeaders = headerRow.some(function(h) { return h !== ''; });
+    if (!hasHeaders) {
+      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    }
 
-    return jsonResponse({ success: true, written: rows.length, sheetName: sheetName, firstRecord: records[0]['Resource Name'] || 'unknown' });
+    return jsonResponse({ success: true, written: rows.length });
 
   } catch (err) {
     return jsonResponse({ success: false, error: err.toString() });

@@ -528,14 +528,28 @@
         </div>
 
         <div class="field">
-          <label>Program Name (if applicable)</label>
+          <label>Program Name</label>
           <input type="text" id="f_program" placeholder="e.g. Employment Services">
         </div>
 
         <div class="field">
           <label>Resource Type *</label>
-          <input type="text" id="f_type" placeholder="e.g. Mental Health - Counseling/Therapy" list="typeList">
+          <input type="text" id="f_type" placeholder="e.g. Mental Health" list="typeList">
           <datalist id="typeList"></datalist>
+        </div>
+
+        <div class="field">
+          <label>Resource Subtype</label>
+          <input type="text" id="f_subtype" placeholder="e.g. Counseling/Therapy">
+        </div>
+
+        <div class="field">
+          <label>HOT List Item?</label>
+          <select id="f_hotlist">
+            <option value="">— No —</option>
+            <option value="Yes">Yes</option>
+          </select>
+          <div class="field-note">Mark "Yes" to include in the Emergency Resources hot list.</div>
         </div>
 
         <div class="field">
@@ -839,7 +853,7 @@ async function syncFromSheet(fresh) {
 function renderTable() {
   const q = (document.getElementById('adminSearch')?.value || '').toLowerCase();
   const filtered = q
-    ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource Description']
+    ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource Subtype','Resource Description']
         .some(k => r[k] && r[k].toLowerCase().includes(q)))
     : resources;
 
@@ -873,9 +887,9 @@ function renderTable() {
         : `<span class="v-dot v-orange"></span>Unverified`;
 
     return `<tr>
-      <td class="col-name">${esc(r['Resource Name'] || r['Organization Name'] || '—')}</td>
+      <td class="col-name">${esc(r['Resource Name'] || r['Organization Name'] || '—')}${r['This is a HOT list item'] && r['This is a HOT list item'].toLowerCase().trim() === 'yes' ? ' <span style="background:#c62828;color:#fff;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:10px;vertical-align:middle;">HOT</span>' : ''}</td>
       <td class="col-org">${esc(r['Organization Name'] || '—')}</td>
-      <td class="col-type"><span class="type-pill">${esc(r['Resource Type'] || '—')}</span></td>
+      <td class="col-type"><span class="type-pill">${esc(r['Resource Type'] || '—')}</span>${r['Resource Subtype'] ? `<br><span style="font-size:0.72rem;color:var(--muted)">${esc(r['Resource Subtype'])}</span>` : ''}</td>
       <td class="col-access"><span class="type-pill ${accessCls}">${accessShort}</span></td>
       <td class="col-verified" style="font-size:0.78rem; color:var(--muted)">${vDot}</td>
       <td class="col-actions">
@@ -900,8 +914,10 @@ function esc(s) {
 const FIELDS = [
   ['Resource Name',                  'f_name'],
   ['Organization Name',              'f_org'],
-  ['Program Name (If Applicable)',   'f_program'],
+  ['Program Name',                   'f_program'],
   ['Resource Type',                  'f_type'],
+  ['Resource Subtype',               'f_subtype'],
+  ['This is a HOT list item',        'f_hotlist'],
   ['Public Access?',                 'f_access'],
   ['Resource Description',           'f_desc'],
   ['Eligibility',                    'f_elig'],

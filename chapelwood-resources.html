@@ -682,7 +682,7 @@
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec";
 
 // CSV column order (must match sheet headers exactly)
-const CSV_COLS = ['Resource Name','Organization Name','Program Name (If Applicable)','Resource Type','Public Access?','Resource Description','Eligibility','Address','Public Phone Number','Public Email','Public Website','Hours','Walk-ins?','Languages','Application','Other Info','Duplicate?','Verified'];
+const CSV_COLS = ['Resource Name','Organization Name','Program Name','Resource Type','Resource Subtype','This is a HOT list item','Public Access?','Resource Description','Eligibility','Address','Public Phone Number','Public Email','Public Website','Hours','Walk-ins?','Languages','Application','Other Info','Duplicate?','Verified'];
 
 function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim());
@@ -812,6 +812,7 @@ const CATEGORIES = [
 function getCategoryForResource(r) {
   const haystack = [
     r['Resource Type'] || '',
+    r['Resource Subtype'] || '',
     r['Resource Name'] || '',
     r['Resource Description'] || ''
   ].join(' ').toLowerCase();
@@ -863,7 +864,7 @@ function filterData(resources) {
   return resources.filter(r => {
     if (!currentSearch) return true;
     const q = currentSearch.toLowerCase();
-    return ['Resource Name','Resource Description','Organization Name','Eligibility','Resource Type','Address','Languages']
+    return ['Resource Name','Resource Description','Organization Name','Eligibility','Resource Type','Resource Subtype','Address','Languages']
       .some(k => r[k] && r[k].toString().toLowerCase().includes(q));
   });
 }
@@ -919,7 +920,7 @@ function showHotList() {
   document.getElementById('searchInput').value = '';
   document.getElementById('clearBtn').classList.remove('visible');
   const hotResources = resources.filter(r => {
-    const val = r['This is a Hot List resource'];
+    const val = r['This is a HOT list item'];
     return val && val.toString().toLowerCase().trim() === 'yes';
   });
   renderResults('🚨 Emergency Resources (Hot List)', hotResources);
@@ -960,7 +961,7 @@ function renderResults(title, resources) {
 
     const name = r['Resource Name'] || r['Organization Name'] || 'Unnamed Resource';
     const org = r['Organization Name'] || '';
-    const prog = r['Program Name (If Applicable)'];
+    const prog = r['Program Name'];
     const orgLine = [org, prog && prog !== name ? prog : null].filter(Boolean).join(' — ');
     const desc = r['Resource Description'] || '';
     const eligibility = r['Eligibility'] || '';
