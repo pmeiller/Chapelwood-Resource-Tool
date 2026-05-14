@@ -498,6 +498,15 @@
     color: #0d47a1;
     border: 1px solid #90caf9;
   }
+  .link-pdf {
+    background: #f3e5f5;
+    color: #6a1b9a;
+    border: 1px solid #ce93d8;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+  }
+  .link-pdf:hover { opacity: 0.8; }
 
   .duplicate-note {
     font-size: 0.75rem;
@@ -845,8 +854,11 @@ function showCategory(cat) {
 }
 
 // ── RENDER RESULTS ────────────────────────────────────────────────────────────
+let _pdfResources = [];
+
 function renderResults(title, resources) {
   const filtered = filterData(resources);
+  _pdfResources = filtered;
   document.getElementById('categoryView').style.display = 'none';
   document.getElementById('resultsView').style.display = 'block';
   document.getElementById('resultsTitle').textContent = title;
@@ -912,10 +924,12 @@ function renderResults(title, resources) {
     if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
     if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
 
+    const pdfIdx = filtered.indexOf(r);
     let footerHTML = '';
     if (!isNA(website)) footerHTML += `<a class="card-link link-website" href="${website}" target="_blank">🔗 Website</a>`;
     if (!isNA(phone)) footerHTML += `<a class="card-link link-phone" href="tel:${phone.replace(/[^0-9+]/g,'').split('A')[0]}">📞 ${phone}</a>`;
     footerHTML += mapItButton(address);
+    footerHTML += `<button class="card-link link-pdf" onclick="generateResourcePDF(_pdfResources[${pdfIdx}])">📄 Save PDF</button>`;
 
     card.innerHTML = `
       <div class="card-top">
@@ -969,6 +983,187 @@ function clearSearch() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 buildCategoryTiles();
 fetchSheetData(); // fetch live data from Google Sheet if SHEET_URL is set
+
+// ── PDF GENERATION ────────────────────────────────────────────────────────────
+async function generateResourcePDF(r) {
+  if (!window.jspdf || !window.QRCode) {
+    alert('PDF libraries are still loading — please try again in a moment.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+
+  const mx = 18;
+  const pageW = 215.9;
+  const pageH = 279.4;
+  const qrSize = 42;
+  const qrX = pageW - mx - qrSize;
+  const qrTopY = 20;
+
+  const website = r['Public Website'];
+  const hasWebsite = website && !isNA(website);
+  const mainW = hasWebsite ? qrX - mx - 4 : pageW - mx * 2;
+
+  // Header bar
+  doc.setFillColor(21, 101, 192);
+  doc.rect(0, 0, pageW, 13, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Chapelwood UMC', mx, 8.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text('Houston Resource Finder', mx + 37, 8.5);
+
+  let y = 21;
+
+  // Resource name
+  const name = r['Resource Name'] || r['Organization Name'] || 'Unnamed Resource';
+  doc.setTextColor(23, 25, 25);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  const nameLines = doc.splitTextToSize(name, mainW);
+  doc.text(nameLines, mx, y);
+  y += nameLines.length * 6.5 + 2;
+
+  // Org / Program line
+  const org = r['Organization Name'] || '';
+  const prog = r['Program Name (If Applicable)'];
+  const orgLine = [org, prog && prog !== name ? prog : null].filter(Boolean).join(' — ');
+  if (orgLine) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const orgLines = doc.splitTextToSize(orgLine, mainW);
+    doc.text(orgLines, mx, y);
+    y += orgLines.length * 5 + 2;
+  }
+
+  // Type / Access
+  const typeParts = [r['Resource Type'], r['Public Access?']].filter(v => v && !isNA(v));
+  if (typeParts.length) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text(typeParts.join('  ·  '), mx, y);
+    y += 5;
+  }
+
+  // QR code (top-right)
+  if (hasWebsite) {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(website, { width: 180, margin: 1 });
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrTopY, qrSize, qrSize);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      doc.setTextColor(140, 140, 140);
+      doc.text('Scan for website', qrX + qrSize / 2, qrTopY + qrSize + 4, { align: 'center' });
+    } catch (e) { console.warn('QR failed:', e); }
+  }
+
+  // Divider
+  y += 3;
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.4);
+  doc.line(mx, y, pageW - mx, y);
+  y += 6;
+
+  // Section helper
+  function addField(label, value, width) {
+    if (!value || isNA(value)) return;
+    const w = width || pageW - mx * 2;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(130, 130, 130);
+    doc.text(label.toUpperCase(), mx, y);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(value, w);
+    doc.text(lines, mx, y);
+    y += lines.length * 4.5 + 5;
+  }
+
+  // Two-column detail helper
+  function addDetail(label, value) {
+    if (!value || isNA(value)) return;
+    const labelW = 30;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text(label, mx, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(value, pageW - mx * 2 - labelW);
+    doc.text(lines, mx + labelW, y);
+    y += Math.max(lines.length * 4.5, 5) + 2;
+  }
+
+  addField('Description', r['Resource Description']);
+
+  // Eligibility with yellow background
+  if (r['Eligibility'] && !isNA(r['Eligibility'])) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(130, 100, 20);
+    doc.text('ELIGIBILITY', mx, y);
+    y += 4;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    const lines = doc.splitTextToSize(r['Eligibility'], pageW - mx * 2 - 4);
+    const boxH = lines.length * 4.5 + 6;
+    doc.setFillColor(255, 248, 210);
+    doc.setDrawColor(240, 200, 80);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(mx - 2, y - 3, pageW - mx * 2 + 4, boxH, 2, 2, 'FD');
+    doc.text(lines, mx + 1, y);
+    y += boxH + 4;
+  }
+
+  addDetail('Address', r['Address']);
+  addDetail('Hours', r['Hours']);
+  addDetail('Walk-ins', r['Walk-ins?']);
+  addDetail('Languages', r['Languages']);
+  addDetail('How to Apply', r['Application']);
+  addDetail('Notes', r['Other Info']);
+
+  y += 2;
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.line(mx, y, pageW - mx, y);
+  y += 5;
+
+  addDetail('Phone', r['Public Phone Number']);
+  if (hasWebsite) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(110, 110, 110);
+    doc.text('Website', mx, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(21, 101, 192);
+    doc.textWithLink(website, mx + 30, y, { url: website });
+    y += 6;
+  }
+
+  // Footer
+  doc.setDrawColor(210, 210, 210);
+  doc.setLineWidth(0.3);
+  doc.line(mx, pageH - 14, pageW - mx, pageH - 14);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(180, 180, 180);
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  doc.text(`Chapelwood UMC Resource Finder  ·  Printed ${today}`, pageW / 2, pageH - 9, { align: 'center' });
+
+  const safeName = name.replace(/[^a-z0-9]+/gi, '_').replace(/_{2,}/g, '_').replace(/^_|_$/g, '').slice(0, 50);
+  doc.save(`${safeName}.pdf`);
+}
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </body>
 </html>
