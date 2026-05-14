@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapelwood Resource Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark: #171919;
+    --white: #fff;
+    --light: #f4f4f4;
+    --mid: #e3e3e3;
+    --border: #ddd;
+    --muted: #666;
+    --accent: #1565c0;
+    --accent-light: #e8f0fe;
+    --danger: #c62828;
+    --danger-light: #fdecea;
+    --success: #2e7d32;
+    --success-light: #e8f5e9;
+    --warn: #e65100;
+    --warn-light: #fff3e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { font-family: 'DM Sans', sans-serif; background: var(--light); color: var(--dark); min-height: 100vh; }
+
+  /* ── PASSWORD SCREEN ── */
+  #pwScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--dark);
+  }
+  .pw-box {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .pw-logo { height: 32px; margin-bottom: 6px; }
+  .pw-leaves { height: 22px; opacity: 0.5; display: block; margin: 0 auto 20px; }
+  .pw-box h1 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+  .pw-box p { font-size: 0.82rem; color: var(--muted); margin-bottom: 24px; }
+  .pw-field {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+  .pw-field:focus { border-color: var(--dark); }
+  .pw-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--dark);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .pw-btn:hover { opacity: 0.85; }
+  .pw-error {
+    display: none;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+
+  /* ── MAIN APP (hidden until logged in) ── */
+  #app { display: none; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--dark);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .header-logo { height: 30px; flex-shrink: 0; }
+  .header-div { width: 1px; height: 30px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+  .header-title { color: var(--white); font-size: 0.95rem; font-weight: 600; flex: 1; line-height: 1.2; }
+  .header-title span { display: block; font-size: 0.72rem; font-weight: 400; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; }
+  .header-leaves { height: 24px; opacity: 0.45; }
+  .logout-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--white);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.22); }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar-search {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+  .toolbar-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .toolbar-search input {
+    width: 100%;
+    padding: 8px 10px 8px 34px;
+    border: 2px solid var(--mid);
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .toolbar-search input:focus { border-color: var(--dark); }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: var(--white); }
+  .btn-success { background: var(--success); color: var(--white); }
+  .btn-danger  { background: var(--danger);  color: var(--white); }
+  .btn-ghost   { background: var(--mid);     color: var(--dark);  }
+  .record-count { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: auto; white-space: nowrap; }
+
+  /* ── TABLE ── */
+  main { padding: 20px 24px 60px; max-width: 1200px; margin: 0 auto; }
+
+  .table-wrap { background: var(--white); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow-x: auto; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead th {
+    background: var(--dark);
+    color: var(--white);
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+    position: sticky;
+    top: 56px;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fafafa; }
+  td { padding: 10px 12px; vertical-align: top; }
+
+  .col-name { min-width: 180px; max-width: 220px; font-weight: 600; }
+  .col-org   { min-width: 150px; max-width: 180px; color: var(--muted); }
+  .col-type  { min-width: 160px; max-width: 200px; }
+  .col-access { min-width: 130px; }
+  .col-verified { min-width: 100px; }
+  .col-actions { min-width: 110px; white-space: nowrap; }
+
+  .type-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--light);
+    color: var(--dark);
+    border: 1px solid var(--border);
+  }
+
+  .access-pub  { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+  .access-rest { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+  .access-serv { background: #fce4ec; color: #ad1457; border-color: #f48fb1; }
+
+  .v-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .v-green { background: #4caf50; }
+  .v-orange { background: #ffa726; }
+
+  .row-actions { display: flex; gap: 6px; }
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .icon-btn:hover { background: var(--light); border-color: #999; }
+  .icon-btn.del:hover { background: var(--danger-light); border-color: var(--danger); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--white);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+  }
+  .modal-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    background: var(--white);
+    z-index: 2;
+  }
+  .modal-header h2 { font-size: 1.05rem; font-weight: 700; flex: 1; }
+  .modal-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted); line-height: 1; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { background: var(--light); }
+  .modal-body { padding: 20px 22px; }
+  .modal-footer {
+    padding: 14px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    position: sticky;
+    bottom: 0;
+    background: var(--white);
+  }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .form-full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 2px solid var(--border);
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+    background: var(--white);
+    color: var(--dark);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 72px; }
+  .field-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+  /* ── DELETE CONFIRM ── */
+  .del-modal .modal-body { text-align: center; padding: 30px 22px; }
+  .del-modal .del-icon { font-size: 2.5rem; margin-bottom: 14px; }
+  .del-modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .del-modal p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── EXPORT PANEL ── */
+  .export-panel {
+    display: none;
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+  }
+  .export-panel.open { display: block; }
+  .export-panel p { color: #aaa; font-size: 0.8rem; margin-bottom: 10px; }
+  .export-panel textarea {
+    width: 100%;
+    height: 140px;
+    background: #0d0d1a;
+    color: #7eff7e;
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    resize: vertical;
+  }
+  .export-panel .copy-btn {
+    margin-top: 8px;
+    padding: 7px 16px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .export-panel .copy-btn:hover { background: #444; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--dark);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); }
+  .toast.danger  { background: var(--danger); }
+
+  /* ── SAVE STATUS ── */
+  #saveStatus {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 5px;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  #saveStatus.saving  { display: flex; background: #fff8e1; color: #b45309; }
+  #saveStatus.saved   { display: flex; background: #e8f5e9; color: #2e7d32; }
+  #saveStatus.error   { display: flex; background: #fce4ec; color: #ad1457; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty .big { font-size: 2.2rem; margin-bottom: 10px; }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-full { grid-column: 1; }
+    header { padding: 10px 14px; }
+    .toolbar { padding: 10px 14px; }
+    main { padding: 14px 12px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── PASSWORD SCREEN ───────────────────────────────────────────────── -->
+<div id="pwScreen">
+  <div class="pw-box">
+    <img class="pw-logo" src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp"
+      alt="Chapelwood UMC" style="filter:invert(1); height:28px; margin-bottom:8px;">
+    <img class="pw-leaves" src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png"
+      alt="" style="filter:invert(1) opacity(0.4); height:20px; display:block; margin: 0 auto 18px;">
+    <h1>Resource Admin</h1>
+    <p>Enter your password to manage resources</p>
+    <input class="pw-field" type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">Sign In →</button>
+    <div class="pw-error" id="pwError">Incorrect password. Please try again.</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ───────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <header>
+    <img class="header-logo" src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp" alt="Chapelwood UMC">
+    <div class="header-div"></div>
+    <div class="header-title">
+      Resource Admin
+      <span>Chapelwood UMC · Houston, TX</span>
+    </div>
+    <img class="header-leaves" src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png" alt="">
+    <button class="logout-btn" onclick="logout()">Sign Out</button>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolbar-search">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" id="adminSearch" placeholder="Search resources…" oninput="renderTable()">
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">＋ Add Resource</button>
+    <button class="btn btn-ghost" onclick="toggleExport()">⬇ Export JSON</button>
+    <button class="btn btn-ghost" onclick="pushAllToSheet()" id="pushBtn">☁ Push All to Sheet</button>
+    <span class="record-count" id="recordCount"></span>
+    <span id="saveStatus"></span>
+  </div>
+
+  <main>
+    <div class="export-panel" id="exportPanel">
+      <p>Copy the JSON below and replace the <code>RAW = [...]</code> array in <strong>chapelwood-resources.html</strong> to publish your changes.</p>
+      <textarea id="exportTA" readonly></textarea>
+      <button class="copy-btn" onclick="copyExport()">📋 Copy to Clipboard</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-name">Resource Name</th>
+            <th class="col-org">Organization</th>
+            <th class="col-type">Type</th>
+            <th class="col-access">Access</th>
+            <th class="col-verified">Verified</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- ── EDIT / ADD MODAL ─────────────────────────────────────────────── -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Edit Resource</h2>
+      <button class="modal-close" onclick="closeModal('editModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <div class="field form-full">
+          <label>Resource Name *</label>
+          <input type="text" id="f_name" placeholder="e.g. Mental Health Counseling">
+        </div>
+
+        <div class="field">
+          <label>Organization Name *</label>
+          <input type="text" id="f_org" placeholder="e.g. Memorial Assistance Ministries">
+        </div>
+
+        <div class="field">
+          <label>Program Name (if applicable)</label>
+          <input type="text" id="f_program" placeholder="e.g. Employment Services">
+        </div>
+
+        <div class="field">
+          <label>Resource Type *</label>
+          <input type="text" id="f_type" placeholder="e.g. Mental Health - Counseling/Therapy" list="typeList">
+          <datalist id="typeList"></datalist>
+        </div>
+
+        <div class="field">
+          <label>Public Access?</label>
+          <select id="f_access">
+            <option value="Public Access">✅ Public Access</option>
+            <option value="Restricted - Outside (SBISD)">🔑 Restricted - Outside (SBISD)</option>
+            <option value="Restricted - Outside (MAM)">🔑 Restricted - Outside (MAM)</option>
+            <option value="Restricted - Outside (CIS)">🔑 Restricted - Outside (CIS)</option>
+            <option value="Restricted - Outside (MAM Rep - David Coles)">🔑 Restricted - Outside (MAM Rep)</option>
+            <option value="Restricted - Serving Ministry">🔒 Restricted - Serving Ministry</option>
+          </select>
+        </div>
+
+        <div class="field form-full">
+          <label>Resource Description</label>
+          <textarea id="f_desc" placeholder="Brief description of what this resource provides…"></textarea>
+        </div>
+
+        <div class="field form-full">
+          <label>Eligibility Requirements</label>
+          <textarea id="f_elig" placeholder="Who qualifies? Any restrictions, income limits, zip codes…"></textarea>
+        </div>
+
+        <div class="field form-full">
+          <label>Address</label>
+          <input type="text" id="f_addr" placeholder="e.g. 1625 Blalock Rd. Houston, TX 77080 or n/a - online">
+        </div>
+
+        <div class="field">
+          <label>Public Phone Number</label>
+          <input type="text" id="f_phone" placeholder="e.g. (713) 468-4516">
+        </div>
+
+        <div class="field">
+          <label>Public Email</label>
+          <input type="text" id="f_email" placeholder="e.g. info@org.org or n/a">
+        </div>
+
+        <div class="field form-full">
+          <label>Public Website</label>
+          <input type="url" id="f_web" placeholder="https://…">
+        </div>
+
+        <div class="field">
+          <label>Hours</label>
+          <input type="text" id="f_hours" placeholder="e.g. M-F 8:30am–5pm">
+        </div>
+
+        <div class="field">
+          <label>Walk-ins?</label>
+          <input type="text" id="f_walkins" placeholder="Yes / No / Yes, but appointment preferred…">
+        </div>
+
+        <div class="field">
+          <label>Languages</label>
+          <input type="text" id="f_lang" placeholder="e.g. English, Spanish, other">
+        </div>
+
+        <div class="field">
+          <label>How to Apply</label>
+          <input type="text" id="f_app" placeholder="e.g. Call, Walk in, Apply online at URL…">
+        </div>
+
+        <div class="field form-full">
+          <label>Other Info / Notes</label>
+          <textarea id="f_other" placeholder="Internal notes, caveats, tips for volunteers…" style="min-height:56px;"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Duplicate? (cross-reference)</label>
+          <input type="text" id="f_dup" placeholder="e.g. Also listed under Financial Assistance">
+        </div>
+
+        <div class="field">
+          <label>Verified Date</label>
+          <input type="text" id="f_verified" placeholder="e.g. 2026-04-14 or NEED VERIFICATION">
+          <div class="field-note">Leave blank if unverified. Use YYYY-MM-DD format.</div>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn btn-success" onclick="saveResource()">💾 Save Resource</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE CONFIRM MODAL ──────────────────────────────────────────── -->
+<div class="modal-overlay" id="delModal">
+  <div class="modal del-modal" style="max-width:420px;">
+    <div class="modal-body">
+      <div class="del-icon">🗑️</div>
+      <h3>Delete this resource?</h3>
+      <p id="delResourceName" style="font-weight:700; margin: 8px 0 6px;"></p>
+      <p>This cannot be undone. The resource will be removed from the list.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('delModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── PASSWORD ──────────────────────────────────────────────────────────
+const PASSWORD = 'Amber';
+
+function checkPw() {
+  const val = document.getElementById('pwInput').value;
+  if (val === PASSWORD) {
+    document.getElementById('pwScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    sessionStorage.setItem('cwAdmin', '1');
+    init();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('cwAdmin');
+  window.location.href = 'chapelwood-resources.html';
+}
+
+// Auto-login if session is still active
+if (sessionStorage.getItem('cwAdmin') === '1') {
+  document.getElementById('pwScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ── GOOGLE SHEETS LIVE DATA ───────────────────────────────────────────
+// Read source: published CSV URL (read-only feed from Google Sheets)
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT8_M7-XcRsGxLEmuMz_-OCOEar7LkYowD2DGkAwHmkxrzheDSsW8unlXBEoY8-O-jEX-X55xcukjoC/pub?gid=0&single=true&output=csv";
+
+// Write destination: Google Apps Script web app URL
+// See SETUP-GOOGLE-SHEETS.html Step 7 for how to deploy this script.
+// Replace null with your deployed Apps Script URL once set up.
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec"
+
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = parseCSVLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = parseCSVLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || null; });
+    return obj;
+  }).filter(r => r['Resource Name'] || r['Organization Name']);
+}
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur.trim() === '' ? null : cur); cur = ''; }
+    else cur += c;
+  }
+  result.push(cur.trim() === '' ? null : cur);
+  return result;
+}
+async function fetchSheetData() {
+  if (!SHEET_URL) return;
+  try {
+    const res = await fetch(SHEET_URL);
+    if (!res.ok) throw new Error('Fetch failed');
+    const text = await res.text();
+    const fresh = parseCSV(text);
+    if (fresh.length > 0) {
+      // Merge with localStorage edits: sheet is source of truth unless admin has local overrides
+      const saved = localStorage.getItem('cwResources');
+      if (!saved) {
+        resources = fresh;
+        saveData(resources);
+        renderTable();
+      }
+      // If local edits exist, show a banner offering to sync
+      else {
+        showSyncBanner(fresh);
+      }
+    }
+  } catch(e) { console.warn('Sheet fetch failed, using local data.', e); }
+}
+function showSyncBanner(fresh) {
+  const existing = document.getElementById('syncBanner');
+  if (existing) return;
+  const b = document.createElement('div');
+  b.id = 'syncBanner';
+  b.style.cssText = 'background:#1565c0;color:#fff;padding:10px 20px;font-size:0.82rem;font-weight:600;display:flex;align-items:center;gap:12px;font-family:inherit;';
+  b.innerHTML = `<span>🔄 Google Sheet has ${fresh.length} records. You have local edits saved.</span>
+    <button onclick="syncFromSheet(${JSON.stringify(fresh).replace(/"/g,'&quot;')})" style="background:#fff;color:#1565c0;border:none;border-radius:6px;padding:5px 14px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem;">Load from Sheet</button>
+    <button onclick="document.getElementById('syncBanner').remove()" style="background:rgba(255,255,255,0.2);border:none;border-radius:6px;padding:5px 10px;color:#fff;cursor:pointer;font-size:0.8rem;">Keep Local</button>`;
+  document.querySelector('.toolbar').before(b);
+}
+async function syncFromSheet(fresh) {
+  resources = fresh;
+  document.getElementById('syncBanner')?.remove();
+  renderTable();
+  showToast('Synced from Google Sheet ✓', 'success');
+  await saveData(resources);
+}
+
+// ── SEED DATA ─────────────────────────────────────────────────────────
+const SEED = [
+  {"Resource Type":"Classes and Trainings - Self-Sufficiency","Public Access?":"Public Access","Organization Name":"Achdiocese of Galveston-Houston","Program Name (If Applicable)":"St. Vincent de Paul","Resource Name":"Systemic Change Initiative - Getting Ahead Program","Resource Description":"Holistic support classes to empower people to make their way out of poverty and into self-sufficiency and increase resiliency","Eligibility":"Must reside within Houston-Galveston area and agree to attend all classes","Address":"n/a - offered online (equipment provided)","Public Phone Number":"713-741-8231","Public Website":"https://www.svdphouston.org/sci","Public Email":"n/a","Hours":null,"Walk-ins?":"No","Languages":"English","Application":"Apply Here: https://www.svdphouston.org/sci","Other Info":null,"Verified":"2026-04-01","Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Clothing","Public Access?":"Restricted - Outside (SBISD)","Organization Name":"Chapelwood UMC","Program Name (If Applicable)":"Year Round Manna","Resource Name":"Year Round Manna","Resource Description":"$400-800 for families of SBISD students, employees, related individuals","Eligibility":"Referral through SBISD CIS Caseworker. Aid given once yearly","Address":"11140 Greenbay St. Houston, TX 77024","Public Phone Number":"n/a","Public Website":"https://chapelwood.org/?serve=year-round-manna","Public Email":"n/a","Hours":"School hours","Walk-ins?":"No","Languages":"English, Spanish, other","Application":"Through CIS","Other Info":null,"Verified":"2026-04-01","Duplicate?":"Yes, see Financial Assistance - Food and Rent/Mortgage and Utilities"},
+  {"Resource Type":"Financial Assistance - Food","Public Access?":"Restricted - Outside (SBISD)","Organization Name":"Chapelwood UMC","Program Name (If Applicable)":"Year Round Manna","Resource Name":"Year Round Manna","Resource Description":"$400-800 for families of SBISD students, employees, related individuals","Eligibility":"Referral through SBISD CIS Caseworker. Aid given once yearly","Address":"11140 Greenbay St. Houston, TX 77024","Public Phone Number":"n/a","Public Website":"https://chapelwood.org/?serve=year-round-manna","Public Email":"n/a","Hours":"School hours","Walk-ins?":"No","Languages":"English, Spanish, other","Application":"Through CIS","Other Info":null,"Verified":"2026-04-01","Duplicate?":"Yes, see Financial Assistance - Clothing and Rent/Mortgage and Utilities"},
+  {"Resource Type":"Financial Assistance - Rent/Mortgage","Public Access?":"Public Access","Organization Name":"St. Cecilia Catholic Church","Program Name (If Applicable)":"St. Vincent de Paul","Resource Name":"Rental Assistance","Resource Description":"Rental/Mortgage financial assistance for those who qualify","Eligibility":"For St. Cecilia, zip codes 77024, 77043, 77055, 77080","Address":"2403 Holcombe Blvd, Houston TX 77021","Public Phone Number":"713-468-1185","Public Website":"https://www.svdphouston.org/homevisit","Public Email":"n/a","Hours":"Th and F 8am-noon","Walk-ins?":"No","Languages":"English, Spanish","Application":"Call","Other Info":null,"Verified":"2026-04-01","Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Rent/Mortgage","Public Access?":"Restricted - Outside (SBISD)","Organization Name":"Chapelwood UMC","Program Name (If Applicable)":"Year Round Manna","Resource Name":"Year Round Manna","Resource Description":"$400-800 for families of SBISD students, employees, related individuals","Eligibility":"Referral through SBISD CIS Caseworker. Aid given once yearly","Address":"11140 Greenbay St. Houston, TX 77024","Public Phone Number":"n/a","Public Website":"https://chapelwood.org/?serve=year-round-manna","Public Email":"n/a","Hours":"School hours","Walk-ins?":"No","Languages":"English, Spanish, other","Application":"Through CIS","Other Info":null,"Verified":"2026-04-01","Duplicate?":"Yes, see Financial Assistance - Food and Utilities"},
+  {"Resource Type":"Financial Assistance - Utilities","Public Access?":"Public Access","Organization Name":"St. Cecilia Catholic Church","Program Name (If Applicable)":"St. Vincent de Paul","Resource Name":"Rental Assistance","Resource Description":"Rental/Mortgage financial assistance for those who qualify","Eligibility":"For St. Cecilia, zip codes 77024, 77043, 77055, 77080","Address":"2403 Holcombe Blvd, Houston TX 77021","Public Phone Number":"713-468-1185","Public Website":"https://www.svdphouston.org/homevisit","Public Email":"n/a","Hours":"Th and F 8am-noon","Walk-ins?":"No","Languages":"English, Spanish","Application":"Call","Other Info":null,"Verified":"2026-04-01","Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Utilities","Public Access?":"Restricted - Outside (SBISD)","Organization Name":"Chapelwood UMC","Program Name (If Applicable)":"Year Round Manna","Resource Name":"Year Round Manna","Resource Description":"$400-800 for families of SBISD students, employees, related individuals","Eligibility":"Referral through SBISD CIS Caseworker. Aid given once yearly","Address":"11140 Greenbay St. Houston, TX 77024","Public Phone Number":"n/a","Public Website":"https://chapelwood.org/?serve=year-round-manna","Public Email":"n/a","Hours":"School hours","Walk-ins?":"No","Languages":"English, Spanish, other","Application":"Through CIS","Other Info":null,"Verified":"2026-04-01","Duplicate?":null},
+  {"Resource Type":"Material Assistance - Furniture","Public Access?":"Restricted - Serving Ministry","Organization Name":"Houston Furniture Bank","Program Name (If Applicable)":null,"Resource Name":"Furniture Assistance Program","Resource Description":"Furniture for those who need it","Eligibility":"Referral and vouchers only through Chapelwood or other Furniture Bank Partners","Address":"8220 Mosely Rd. Houston, TX 77075  AND ALSO 5900 North Fwy #127 Houston, TX 77076","Public Phone Number":"(South) 713-842-9771 AND ALSO (North) 346-352-4174","Public Website":"https://houstonfurniturebank.org/programs-and-services/furniture-assistance-program/","Public Email":"n/a","Hours":"South - M-Sat 9-5 AND ALSO North - M-F 8-4","Walk-ins?":"Not for voucher furniture","Languages":"English","Application":"Only through Chapelwood Serving Ministry or another participating partner","Other Info":null,"Verified":"2026-04-01","Duplicate?":null},
+  {"Resource Type":"Classes and Trainings - ESL","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Literacy Advance Services","Resource Name":"English Classes (ESL)","Resource Description":"Very low-cost ESL classes for non-native speakers. Six instructional levels both in person and online. Three semesters per year.","Eligibility":"MUST be 18 years or older, a resident within the Houston Metro area, not currently on probation for a violent crime. $40 application fee. Must complete the online application.","Address":"MAM - 1625 Blalock Rd. Houston, TX 77080 but classes in various locations","Public Phone Number":"(713) 266-8777","Public Website":"https://www.mamhouston.org/learnenglish","Public Email":"info@literacyadvance.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/learnenglish","Other Info":"Classes offered on several campuses simultaneously","Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Classes and Trainings - Citizenship","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Literacy Advance Services","Resource Name":"Citizenship Classes","Resource Description":"Very low-cost classes to help people prepare for their citizenship test and interview. English/Civics, Civics en Español, Interview Tutoring, and Intensive Interview Tutoring.","Eligibility":"MUST be 18 years or older, a resident within the Houston Metro area, not currently on probation for a violent crime. $40 application fee. Must complete the online application.","Address":"MAM - 1625 Blalock Rd. Houston, TX 77080 but classes in various locations","Public Phone Number":"(713) 396-5903 OR (713) 468-4516","Public Website":"https://www.mamhouston.org/citizenship","Public Email":"info@literacyadvance.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/citizenship","Other Info":"Classes offered online and in person","Verified":"2026-04-14","Duplicate?":"Also listed under Immigration"},
+  {"Resource Type":"Classes and Trainings - Digital Literacy","Public Access?":"Restricted - Outside (MAM Rep - David Coles)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Literacy Advance Services","Resource Name":"Digital Literacy Classes","Resource Description":"Two basic classes offered: Basic Excel and Basic Computer Skills for Seniors. More info on website.","Eligibility":"Participants must have at least level 3 English. No age requirement, but expect to be with older adults. Must be a MAM client or student. Contact David Coles first.","Address":"MAM - 1625 Blalock Rd. Houston, TX 77080 but classes at Christ the King - 1201 Silber Rd.","Public Phone Number":"David Coles (346) 415-6166","Public Website":"https://www.mamhouston.org/digital-literacy","Public Email":"dcoles@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English only","Application":"https://www.mamhouston.org/digital-literacy","Other Info":"Must contact David Coles to become a MAM client before registering.","Verified":"NEED VERIFICATION","Duplicate?":null},
+  {"Resource Type":"Employment - General Workforce Training","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Employment Services","Resource Name":"Employment Certification (ECP)","Resource Description":"Six-workshop course aimed at helping people succeed in the work environment","Eligibility":"MUST attend an orientation session at MAM one day M-F at 10am. Arrive early, as capacity is 20 people. Must be functional in English, legally able to work in the US, have basic computer literacy, and be able to attend all workshops.","Address":"MAM - 1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/ecp","Public Email":"ybing@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/ecp","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Employment - Young Adult Workforce Training","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Employment Services","Resource Name":"Pathways for Young Adults (16-24)","Resource Description":"Connect young adults with job training/vocational training opportunities, career development plan, guidance, GED help, and other related skills","Eligibility":"Must be 18-24 years old. For further eligibility requirements, attend a free online or in person orientation, M-F 10am.","Address":"MAM - 1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/youngadults","Public Email":"jguevara@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/youngadults","Other Info":"Check out the Pathways map on the website for a clear explanation of the program.","Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Employment - Job Search Help","Public Access?":"Restricted - Outside (MAM)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Employment Services","Resource Name":"Job Coaching","Resource Description":"Assists clients to set job search goals, identify key skills and experiences, work on resumes, improve confidence, and find jobs.","Eligibility":"Contact for eligibility","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/jobcoaching","Public Email":"ybing@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/jobcoaching","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Employment - Vocational Training - Medical","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Employment Services","Resource Name":"Vocational Training (many different programs)","Resource Description":"Connecting people to vocational training in EKG Interpretation, CNA, Phlebotomy, and other careers","Eligibility":"Participants must be MAM clients, at least 18 years old. Should attend orientation any day M-F 10am and complete the online forms.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/training","Public Email":"ybing@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/training","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Employment - ESL Classes","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Employment Services","Resource Name":"Workforce ESL / Servicios de empleo en Español","Resource Description":"Helps people working on their English find and keep great jobs.","Eligibility":"Conversational level English, work authorized, motivated and willing to follow through.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/englishlearners","Public Email":"aarreaza@mamhouston.org OR cmuraro@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but only M-Th 8:30-4:30 and F 8:30-1:30","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/englishlearners","Other Info":null,"Verified":"2026-04-14","Duplicate?":"Also listed under Classes - ESL"},
+  {"Resource Type":"Immigration - Legal Consultation","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Immigration Legal Services","Resource Name":"Online Legal Consultations","Resource Description":"Initial legal consultation for immigration services.","Eligibility":"NO initial asylum applications or immigration court cases. Must schedule ahead of time online or by calling. Must make less than 400% of the federal poverty level. Must be here lawfully.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 929-9280","Public Website":"https://www.mamhouston.org/legal","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"NO - absolutely NONE","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/legal","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Immigration - Various","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Immigration Legal Services","Resource Name":"Citizenship Information Session","Resource Description":"An overview of all the immigration services MAM offers on specific dates","Eligibility":"Must be a green card holder (lawful permanent resident), 18 and up","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 929-9280","Public Website":"https://www.mamhouston.org/legal","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"NO - absolutely NONE","Languages":"English, Spanish, other","Application":"https://www.mamhouston.org/legal","Other Info":"Services offered include: Citizenship/Naturalization Applications; DACA Renewals; Humanitarian-based petitions for victims of crime (U Visas); Adjustment of Status; Family Relative Petitions","Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Mental Health - Counseling/Therapy","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Mental Health Counseling","Resource Description":"Individual and family counseling for adults, children, and adolescents who meet screening requirements. Referrals given if needed.","Eligibility":"Contact Eduardo Molina or Maria España for initial screening.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"Eduardo - 346-415-6153 OR Maria - 346-415-4260","Public Website":"https://www.mamhouston.org/mentalhealth","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"NO","Languages":"English or Spanish","Application":"https://www.mamhouston.org/mentalhealth","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Medical Assistance - Children","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Free Vaccines for Children","Resource Description":"Free vaccines and other basic medical services","Eligibility":"Eligibility varies based on program, but for Summer 2026, must be under 18 and have no health insurance, be covered by Medicaid, or be underinsured or Native American or Alaska Native. Bring original printed shot record.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/medical","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - only walk-ins","Languages":"English or Spanish","Application":"Come in to apply","Other Info":"Check back frequently, as their medical services change","Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Services - Benefits Enrollment Help","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Benefits Enrollment Assistance","Resource Description":"Assistance enrolling in state and local benefits programs, especially SNAP, CHIP, Medicaid, Medicare QMB, TANF, Harris County Gold Card","Eligibility":"No zip code restriction. Helps people without computer skills, those unfamiliar with the process, and those who are undocumented but have US citizen children who qualify for benefits. Must make an appointment.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/benefits","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - but they'll make an appointment when you walk in","Languages":"English or Spanish","Application":"Come in to apply","Other Info":null,"Verified":"2026-04-14","Duplicate?":null},
+  {"Resource Type":"Disaster Assistance","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Disaster Assistance","Resource Description":"Material and financial assistance following a disaster or crisis","Eligibility":"Case by case basis.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/disaster","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but it likely won't help","Languages":"English or Spanish","Application":"Check the website after big disasters","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Classes and Trainings - Self-Sufficiency","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":null,"Resource Name":"Getting Ahead Classes","Resource Description":"A program designed to help people stop living paycheck to paycheck. Lasts 5 months, once a week.","Eligibility":"Internet access. Not in crisis. Relatives not participating in the same class. Must commit to fully participate and complete all sessions. Must provide valid ID, current paystubs, complete application, and interview.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"ENGLISH - Jeanette Watkins (713) 489-6224 / SPANISH - Lucero Granados (713) 574-7534","Public Website":"https://www.mamhouston.org/getting-ahead","Public Email":"jfields@mamhouston.org / lgranados@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"No","Languages":"English or Spanish","Application":"Contact the people listed for the full application.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Material Assistance - School Supplies","Public Access?":"Restricted - Outside (CIS)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Back to School Program","Resource Description":"Helps parents shop for new uniforms for their children using vouchers.","Eligibility":"Must have a child in a school where CIS (Communities in Schools) is active and apply through them.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/backtoschool","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"No","Languages":"English or Spanish","Application":"Contact your child's CIS Student Support Manager","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Material Assistance - Miscellaneous","Public Access?":"Restricted - Outside (MAM)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Healthy, Supportive Communities","Resource Name":"Christmas Share","Resource Description":"Assists parents in getting Christmas gifts for their children.","Eligibility":"Must be an active MAM client and engaged in their services throughout the year.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/christmasshare","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"NO","Languages":"English or Spanish","Application":"Contact MAM. Must be involved in their programs.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Classes and Trainings - Financial","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Thrive Empowerment Network","Resource Description":"Integrated support services focusing on financial stability through increased career opportunities, community support, coaching, etc.","Eligibility":"Contact for eligibility","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/thrive","Public Email":"enetwork@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"NO","Languages":"English or Spanish","Application":"https://www.mamhouston.org/thrive","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Rent/Mortgage","Public Access?":"Restricted - Outside (MAM)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Rent and Utility Assistance","Resource Description":"Financial assistance for those engaged in MAM programs","Eligibility":"Must come in person and meet certain income guidelines. Must live within MAM's service area and give photo ID.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/housing","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - they suggest coming in person","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Utilities","Public Access?":"Restricted - Outside (MAM)","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Rent and Utility Assistance","Resource Description":"Financial assistance for those engaged in MAM programs","Eligibility":"Must come in person and meet certain income guidelines. Must live within MAM's service area and give photo ID.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/housing","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - they suggest coming in person","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Material Assistance - Clothing","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Family Assistance Services","Resource Name":"Clothing Vouchers","Resource Description":"Clothing vouchers for those who qualify and come in person","Eligibility":"Must come in person and meet certain income guidelines. Must live within MAM's service area and give photo ID.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/otherhelp","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - they suggest coming in person","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Material Assistance - Food","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Family Assistance Services","Resource Name":"Food Assistance","Resource Description":"Single lunch bags, SNAP enrollment assistance, referrals to food pantries","Eligibility":"Must come in person and meet certain income guidelines. Must live within MAM's service area and give photo ID.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/otherhelp","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - they suggest coming in person","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Material Assistance - Transportation","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Family Assistance Services","Resource Name":"Transportation Assistance","Resource Description":"Gas vouchers, metro money to facilitate travel to work, job interviews, or medical appointments","Eligibility":"Must come in person and meet certain income guidelines. Must live within MAM's service area and give photo ID.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/otherhelp","Public Email":null,"Hours":"Roughly 8:30-5 M-F","Walk-ins?":"YES - they suggest coming in person","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Services - Tax Preparation","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Free Tax Preparation","Resource Description":"Tax return preparation and ITIN applications and renewals","Eligibility":"Families/individuals earning up to $58,000/yr. Feb 2 through April 15 only. Must bring documents listed on the website.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 273-3755","Public Website":"https://www.mamhouston.org/taxes","Public Email":null,"Hours":"M-F 1pm-7pm; Sat 9-3; Sun 12-5","Walk-ins?":"Yes, limited availability","Languages":"English or Spanish","Application":"Go talk to them or call them.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Employment - Workforce Training","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Innova Community Business Academy","Resource Description":"Helping get small businesses off the ground with capital and resources in a cohort model","Eligibility":"Small business owners seeking growth and expansion opportunities, established entrepreneurs, and individuals with existing businesses looking to enhance profitability. $50 fee to participate.","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/innova","Public Email":"innova@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but it won't help","Languages":"English or Spanish","Application":"Check back on the website periodically for new cohorts.","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Classes - Financial","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Financial Education Classes","Resource Description":"Year-round online and in-person classes aimed at financial literacy","Eligibility":"Free to all","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"(713) 468-4516","Public Website":"https://www.mamhouston.org/financialed","Public Email":"mpaz@mamhouston.org OR ifrias@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but it won't help","Languages":"English or Spanish","Application":"No app needed, just register on the website","Other Info":null,"Verified":null,"Duplicate?":null},
+  {"Resource Type":"Services - Navigation/Case Management","Public Access?":"Public Access","Organization Name":"Memorial Assistance Ministries","Program Name (If Applicable)":"Financially Stable Families","Resource Name":"Navigation Services","Resource Description":"Coaches and personal guides who will work with individuals and families in their journey to financial stability","Eligibility":"All individuals who are ready to start their own journey and willing to commit to work with a Navigator on their own goals","Address":"1625 Blalock Rd. Houston, TX 77080","Public Phone Number":"Laura Rodriguez - (713) 714-3687","Public Website":"https://www.mamhouston.org/navigation-services","Public Email":"lrodriguez@mamhouston.org OR tquiroz@mamhouston.org","Hours":"Roughly 8:30-5 M-F","Walk-ins?":"Yes, but it won't help","Languages":"English or Spanish","Application":"https://unitedwayhouston.org/ICJ/","Other Info":"Note: in 2025 Fair Haven tried to get navigators on our campus full-time and it was decided our folks weren't at a level of stability commensurate with their services.","Verified":null,"Duplicate?":null},
+  {"Resource Type":"Childcare - Scholarships","Public Access?":"Public Access","Organization Name":"Texas Child Care Connection","Program Name (If Applicable)":"Child Care Services program","Resource Name":"Child Care Services Program","Resource Description":"Helps eligible Texas families pay for child care with scholarships so families can go to work or attend job training.","Eligibility":"Those who live in Texas, child under age 13 (or age 19 with a disability), child is a US citizen or has legal immigration status. Income limits apply - see site.","Address":"N/A","Public Phone Number":"N/A - all online","Public Website":"https://www.childcare.texas.gov/for-families/child-care-scholarships","Public Email":"N/A","Hours":"N/A","Walk-ins?":"No","Languages":"English","Application":"https://www.childcare.texas.gov/for-families/child-care-scholarships","Other Info":null,"Verified":null,"Duplicate?":"Also listed under Financial Assistance - Childcare"},
+  {"Resource Type":"Financial Assistance - Rent/Mortgage","Public Access?":"Public Access","Organization Name":"Christian Community Services Center","Program Name (If Applicable)":"Financial Assistance - Southwest","Resource Name":"Rental Assistance, Assistance with Medical Bills","Resource Description":"Limited financial assistance for those who qualify","Eligibility":"Must have lived in apartment for minimum four months. Household can receive assistance up to 3 times, once per 12 months. Only serve south of I-10 on this side of town - check website for zip codes.","Address":"6856 Bellaire Blvd. Houston, TX 77074","Public Phone Number":"(713) 871-9741","Public Website":"https://ccschouston.org/services/utility-bill-rental-assistance/","Public Email":null,"Hours":"M-F 10am-2pm","Walk-ins?":"NO","Languages":"English","Application":"Call during hours to set up an interview","Other Info":"Keep calling back if the number is busy.","Verified":null,"Duplicate?":null},
+  {"Resource Type":"Financial Assistance - Rent/Mortgage","Public Access?":"Public Access","Organization Name":"House of Amos","Program Name (If Applicable)":null,"Resource Name":"Financial Assistance","Resource Description":"Limited financial assistance for those who qualify","Eligibility":"Need based on sudden loss of income. Living in zip codes 77036, 77042, 77072, 77082, or 77099. Must have at least one child in residence under 16. Must currently owe less than $1000.","Address":"11169 Beechnut St. Ste G, Houston, TX 77072","Public Phone Number":"(832) 977-1208","Public Website":"https://houseofamos.org/services","Public Email":null,"Hours":"Varies","Walk-ins?":"NO","Languages":"English","Application":"https://houseofamos.org/services","Other Info":"Application online","Verified":null,"Duplicate?":null},
+  {"Resource Type":"Transportation - Metro and Related","Public Access?":"Public Access","Organization Name":"Metro","Program Name (If Applicable)":"MetroLIFT","Resource Name":"MetroLIFT","Resource Description":"ADA-accessible shared ride paratransit service for those who qualify","Eligibility":"Must fill out entire application, which requires a doctor's recommendation and online application proving inability to function with regular Metro services.","Address":"1900 Main St. Houston, TX 77002","Public Phone Number":"713-225-0119 OR 713-652-8969 for TTY","Public Website":"https://www.ridemetro.org/riding-metro/transit-services/metrolift-paratransit","Public Email":"n/a","Hours":"10am-5pm M-F","Walk-ins?":"Yes, but it won't help","Languages":"English, Spanish, and several others, though calls may only be in English or Spanish","Application":"Scroll down and click on \"How to Apply\" at the website","Other Info":null,"Verified":"2026-04-30","Duplicate?":null}
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────
+function loadData() {
+  const saved = localStorage.getItem('cwResources');
+  return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SEED));
+}
+
+function setSaveStatus(state, msg) {
+  const el = document.getElementById('saveStatus');
+  if (!el) return;
+  el.className = `${state}`;
+  el.textContent = msg;
+  if (state === 'saved') {
+    setTimeout(() => { el.className = ''; el.textContent = ''; }, 3000);
+  }
+}
+
+async function saveData(data) {
+  // Always cache locally first — instant and reliable
+  localStorage.setItem('cwResources', JSON.stringify(data));
+
+  // If no Apps Script URL configured, we're done
+  if (!SCRIPT_URL) return;
+
+  setSaveStatus('saving', '⏳ Saving to Google Sheet…');
+  try {
+    // no-cors is required when opening the file locally (file:// protocol).
+    // The response will be opaque (unreadable) but the Apps Script still receives and processes it.
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ resources: data })
+    });
+    setSaveStatus('saved', `✓ Saved to Google Sheet`);
+  } catch (err) {
+    console.error('Sheet write failed:', err);
+    setSaveStatus('error', '⚠ Sheet save failed — changes kept locally');
+  }
+}
+
+let resources = loadData();
+let editingIndex = null;
+let deletingIndex = null;
+
+// ── INIT ──────────────────────────────────────────────────────────────
+function init() {
+  // Populate datalist for Resource Type autocomplete
+  const types = [...new Set(resources.map(r => r['Resource Type']).filter(Boolean))].sort();
+  const dl = document.getElementById('typeList');
+  dl.innerHTML = types.map(t => `<option value="${t}">`).join('');
+  renderTable();
+  fetchSheetData(); // check for live sheet updates
+}
+if (sessionStorage.getItem('cwAdmin') === '1') init();
+
+// ── TABLE RENDER ──────────────────────────────────────────────────────
+function renderTable() {
+  const q = (document.getElementById('adminSearch')?.value || '').toLowerCase();
+  const filtered = q
+    ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource Description']
+        .some(k => r[k] && r[k].toLowerCase().includes(q)))
+    : resources;
+
+  document.getElementById('recordCount').textContent =
+    `${filtered.length} of ${resources.length} resource${resources.length !== 1 ? 's' : ''}`;
+
+  const tbody = document.getElementById('tableBody');
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="big">🔍</div><p>No resources match your search.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((r, fi) => {
+    const realIndex = resources.indexOf(r);
+    const access = r['Public Access?'] || '';
+    const al = access.toLowerCase();
+    const accessCls = al.includes('serving') ? 'access-serv' : al.includes('restricted') ? 'access-rest' : 'access-pub';
+    const accessShort = al.includes('serving') ? '🔒 Serving Ministry'
+      : al.includes('sbisd') ? '🔑 SBISD'
+      : al.includes('mam rep') ? '🔑 MAM Rep'
+      : al.includes('mam') ? '🔑 MAM'
+      : al.includes('cis') ? '🔑 CIS'
+      : al.includes('restricted') ? '🔑 Restricted'
+      : '✅ Public';
+
+    const verified = r['Verified'] || '';
+    const vDot = verified && verified !== 'NEED VERIFICATION'
+      ? `<span class="v-dot v-green"></span>${verified}`
+      : verified === 'NEED VERIFICATION'
+        ? `<span class="v-dot v-orange"></span>Needs check`
+        : `<span class="v-dot v-orange"></span>Unverified`;
+
+    const name = r['Resource Name'] || r['Organization Name'] || '—';
+    const org  = r['Organization Name'] || '—';
+    const type = r['Resource Type'] || '—';
+
+    return `<tr>
+      <td class="col-name">${esc(name)}</td>
+      <td class="col-org">${esc(org)}</td>
+      <td class="col-type"><span class="type-pill">${esc(type)}</span></td>
+      <td class="col-access"><span class="type-pill ${accessCls}">${accessShort}</span></td>
+      <td class="col-verified" style="font-size:0.78rem; color:var(--muted)">${vDot}</td>
+      <td class="col-actions">
+        <div class="row-actions">
+          <button class="icon-btn" title="Edit" onclick="openEditModal(${realIndex})">✏️</button>
+          <button class="icon-btn del" title="Delete" onclick="openDelModal(${realIndex})">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── FIELDS MAP ────────────────────────────────────────────────────────
+const FIELDS = [
+  ['Resource Name',           'f_name'],
+  ['Organization Name',       'f_org'],
+  ['Program Name (If Applicable)', 'f_program'],
+  ['Resource Type',           'f_type'],
+  ['Public Access?',          'f_access'],
+  ['Resource Description',    'f_desc'],
+  ['Eligibility',             'f_elig'],
+  ['Address',                 'f_addr'],
+  ['Public Phone Number',     'f_phone'],
+  ['Public Email',            'f_email'],
+  ['Public Website',          'f_web'],
+  ['Hours',                   'f_hours'],
+  ['Walk-ins?',               'f_walkins'],
+  ['Languages',               'f_lang'],
+  ['Application',             'f_app'],
+  ['Other Info',              'f_other'],
+  ['Duplicate?',              'f_dup'],
+  ['Verified',                'f_verified'],
+];
+
+function populateForm(r) {
+  FIELDS.forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = r[key] || '';
+  });
+}
+
+function readForm() {
+  const obj = {};
+  FIELDS.forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    obj[key] = el ? (el.value.trim() || null) : null;
+  });
+  return obj;
+}
+
+// ── ADD MODAL ─────────────────────────────────────────────────────────
+function openAddModal() {
+  editingIndex = null;
+  document.getElementById('modalTitle').textContent = '＋ Add New Resource';
+  FIELDS.forEach(([, id]) => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('f_access').value = 'Public Access';
+  openModal('editModal');
+}
+
+// ── EDIT MODAL ────────────────────────────────────────────────────────
+function openEditModal(index) {
+  editingIndex = index;
+  document.getElementById('modalTitle').textContent = '✏️ Edit Resource';
+  populateForm(resources[index]);
+  openModal('editModal');
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────
+async function saveResource() {
+  const name = document.getElementById('f_name').value.trim();
+  const org  = document.getElementById('f_org').value.trim();
+  const type = document.getElementById('f_type').value.trim();
+  if (!name || !org || !type) {
+    showToast('Please fill in Resource Name, Organization, and Type.', 'danger');
+    return;
+  }
+  const obj = readForm();
+  if (editingIndex !== null) {
+    resources[editingIndex] = obj;
+    showToast('Resource updated ✓', 'success');
+  } else {
+    resources.push(obj);
+    showToast('Resource added ✓', 'success');
+  }
+  closeModal('editModal');
+  renderTable();
+  await saveData(resources);
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────
+function openDelModal(index) {
+  deletingIndex = index;
+  const r = resources[index];
+  document.getElementById('delResourceName').textContent =
+    r['Resource Name'] || r['Organization Name'] || 'this resource';
+  openModal('delModal');
+}
+
+async function confirmDelete() {
+  if (deletingIndex === null) return;
+  const name = resources[deletingIndex]['Resource Name'] || 'Resource';
+  resources.splice(deletingIndex, 1);
+  closeModal('delModal');
+  renderTable();
+  showToast(`"${name}" deleted`, 'danger');
+  deletingIndex = null;
+  await saveData(resources);
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────
+async function pushAllToSheet() {
+  if (!SCRIPT_URL) {
+    showToast('No Apps Script URL configured — see setup guide.', 'danger');
+    return;
+  }
+  const btn = document.getElementById('pushBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Pushing…';
+  setSaveStatus('saving', '⏳ Pushing all to Google Sheet…');
+  try {
+    // no-cors required for file:// protocol — response is opaque but Apps Script still processes it
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ resources })
+    });
+    setSaveStatus('saved', `✓ All ${resources.length} resources pushed to sheet`);
+    showToast(`✓ ${resources.length} resources pushed to Google Sheet`, 'success');
+  } catch (err) {
+    console.error('Push failed:', err);
+    setSaveStatus('error', '⚠ Push failed — check console');
+    showToast('Push to sheet failed', 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '☁ Push All to Sheet';
+  }
+}
+
+function toggleExport() {
+  const panel = document.getElementById('exportPanel');
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) {
+    document.getElementById('exportTA').value = JSON.stringify(resources, null, 2);
+  }
+}
+
+function copyExport() {
+  const ta = document.getElementById('exportTA');
+  ta.select();
+  document.execCommand('copy');
+  showToast('Copied to clipboard ✓', 'success');
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
