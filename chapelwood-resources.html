@@ -109,8 +109,26 @@
     text-decoration: none;
     letter-spacing: 0.03em;
     transition: background 0.15s;
+    cursor: pointer;
   }
   .admin-btn:hover { background: rgba(255,255,255,0.22); }
+
+  .hotlist-btn {
+    flex-shrink: 0;
+    padding: 7px 16px;
+    background: #c62828;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .hotlist-btn:hover { background: #e53935; }
 
   /* ── SEARCH BAR ─────────────────────────────────── */
   .search-bar {
@@ -541,8 +559,9 @@
   .nodate-dot   { background: #aaa;    }  /* grey   — no verification date */
   .unverified-dot { background: #ffa726; }
 
-  /* ── 211 MOBILE BUTTON ───────────────────────────── */
-  .btn-211-mobile {
+  /* ── MOBILE-ONLY BUTTONS ─────────────────────────── */
+  .btn-211-mobile,
+  .btn-hotlist-mobile {
     display: none; /* hidden on desktop */
   }
 
@@ -551,6 +570,28 @@
     header { padding: 12px 16px; }
     main { padding: 16px 14px 32px; }
     .search-bar, .filters { padding-left: 14px; padding-right: 14px; }
+
+    .btn-hotlist-mobile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 11px 16px;
+      margin-bottom: 10px;
+      background: #c62828;
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      box-shadow: 0 2px 8px rgba(198,40,40,0.35);
+      cursor: pointer;
+    }
+    .btn-hotlist-mobile:hover { background: #e53935; }
 
     .btn-211-mobile {
       display: flex;
@@ -590,6 +631,7 @@
   <img class="header-leaves"
     src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png"
     alt="">
+  <button onclick="showHotList()" class="hotlist-btn">🚨 Emergency Resources</button>
   <a href="https://unitedwayhouston.org/what-we-do/211-texas-united-way-helpline/" target="_blank" rel="noopener" class="admin-btn" style="background:rgba(0,120,200,0.22); border-color:rgba(100,180,255,0.4);">211 United Way</a>
   <a href="https://pmeiller.github.io/Chapelwood-Resource-Tool/chapelwood-admin.html" class="admin-btn">Admin</a>
 </header>
@@ -610,6 +652,7 @@
 <main>
   <!-- Category Tiles View -->
   <div id="categoryView">
+    <button onclick="showHotList()" class="btn-hotlist-mobile">🚨 Emergency Resources (Hot List)</button>
     <a href="https://unitedwayhouston.org/what-we-do/211-texas-united-way-helpline/"
        target="_blank" rel="noopener"
        class="btn-211-mobile">
@@ -867,6 +910,19 @@ function buildCategoryTiles() {
     `;
     grid.appendChild(tile);
   });
+}
+
+// ── SHOW HOT LIST ─────────────────────────────────────────────────────────────
+function showHotList() {
+  currentCategory = null;
+  currentSearch = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').classList.remove('visible');
+  const hotResources = resources.filter(r => {
+    const val = r['This is a Hot List resource'];
+    return val && val.toString().toLowerCase().trim() === 'yes';
+  });
+  renderResults('🚨 Emergency Resources (Hot List)', hotResources);
 }
 
 // ── SHOW CATEGORY ─────────────────────────────────────────────────────────────
