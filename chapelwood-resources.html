@@ -624,7 +624,7 @@
 // ── GOOGLE SHEETS LIVE DATA ────────────────────────────────────────────────
 // Live data endpoint — Apps Script GET returns JSON directly from the sheet.
 // This works from local file:// without CORS issues.
-const VERSION = '0.12';
+const VERSION = '0.13';
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec";
 
 // CSV column order (must match sheet headers exactly)
@@ -1013,7 +1013,7 @@ function loadScript(src) {
 async function generateResourcePDF(r) {
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    await loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js');
   } catch (e) {
     alert('Could not load PDF libraries. Please check your internet connection and try again.');
     return;
@@ -1165,16 +1165,27 @@ async function generateResourcePDF(r) {
   // QR code at bottom (centered, above footer)
   if (hasWebsite) {
     try {
+      const qr = qrcode(0, 'M');
+      qr.addData(website);
+      qr.make();
+
+      // qrcode-generator outputs GIF — draw onto canvas to get PNG for jsPDF
+      const gifUrl = qr.createDataURL(6, 0);
+      const img = new Image();
+      img.src = gifUrl;
+      await new Promise(resolve => { img.onload = resolve; });
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      const pngUrl = c.toDataURL('image/png');
+
       const qrSize = 36;
       const qrX = (pageW - qrSize) / 2;
       const qrY = pageH - 66;
-      const canvas = document.createElement('canvas');
-      await QRCode.toCanvas(canvas, website, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
-      const qrDataUrl = canvas.toDataURL('image/png');
       doc.setDrawColor(220, 220, 220);
       doc.setLineWidth(0.3);
       doc.line(mx, qrY - 8, pageW - mx, qrY - 8);
-      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      doc.addImage(pngUrl, 'PNG', qrX, qrY, qrSize, qrSize);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(140, 140, 140);
