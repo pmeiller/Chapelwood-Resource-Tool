@@ -542,6 +542,20 @@
         </div>
 
         <div class="field">
+          <label>Resource SubType</label>
+          <input type="text" id="f_subtype" placeholder="e.g. Counseling/Therapy">
+        </div>
+
+        <div class="field">
+          <label>Hot List?</label>
+          <select id="f_hotlist">
+            <option value="">— No —</option>
+            <option value="Yes">Yes</option>
+          </select>
+          <div class="field-note">Mark "Yes" to include in the Emergency Resources hot list.</div>
+        </div>
+
+        <div class="field">
           <label>Public Access?</label>
           <select id="f_access">
             <option value="Public Access">✅ Public Access</option>
@@ -905,6 +919,8 @@ const FIELDS = [
   ['Organization Name',              'f_org'],
   ['Program Name (If Applicable)',   'f_program'],
   ['Resource Type',                  'f_type'],
+  ['Resource SubType',               'f_subtype'],
+  ['Hot List?',                      'f_hotlist'],
   ['Public Access?',                 'f_access'],
   ['Resource Description',           'f_desc'],
   ['Eligibility',                    'f_elig'],

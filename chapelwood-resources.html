@@ -667,11 +667,11 @@
 // ── GOOGLE SHEETS LIVE DATA ────────────────────────────────────────────────
 // Live data endpoint — Apps Script GET returns JSON directly from the sheet.
 // This works from local file:// without CORS issues.
-const VERSION = '0.14';
+const VERSION = '0.15';
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec";
 
 // CSV column order (must match sheet headers exactly)
-const CSV_COLS = ['Resource Name','Organization Name','Program Name (If Applicable)','Resource Type','Public Access?','Resource Description','Eligibility','Address','Public Phone Number','Public Email','Public Website','Hours','Walk-ins?','Languages','Application','Other Info','Duplicate?','Verified'];
+const CSV_COLS = ['Resource Name','Organization Name','Program Name (If Applicable)','Resource Type','Resource SubType','Hot List?','Public Access?','Resource Description','Eligibility','Address','Public Phone Number','Public Email','Public Website','Hours','Walk-ins?','Languages','Application','Other Info','Duplicate?','Verified'];
 
 function parseCSV(text) {
   const lines = text.split('\n').filter(l => l.trim());
@@ -852,7 +852,7 @@ function filterData(resources) {
   return resources.filter(r => {
     if (!currentSearch) return true;
     const q = currentSearch.toLowerCase();
-    return ['Resource Name','Resource Description','Organization Name','Eligibility','Resource Type','Address','Languages']
+    return ['Resource Name','Resource Description','Organization Name','Eligibility','Resource Type','Resource SubType','Address','Languages']
       .some(k => r[k] && r[k].toString().toLowerCase().includes(q));
   });
 }
