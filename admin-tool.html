@@ -474,7 +474,7 @@
 
     <span class="bake-wrap">
       <button class="btn btn-bake" onclick="publishToGitHub()" id="publishBtn">☁ Publish</button>
-      <span class="tooltip-box">Downloads (and optionally pushes to GitHub) a version of <strong>chapelwood-resources.html</strong> with current data baked in as instant-load fallback. No more waiting for the sheet to load!</span>
+      <span class="tooltip-box">Downloads (and optionally pushes to GitHub) a version of <strong>index.html</strong> with current data baked in as instant-load fallback. No more waiting for the sheet to load!</span>
     </span>
     <span class="record-count" id="recordCount"></span>
     <span id="saveStatus"></span>
@@ -487,7 +487,7 @@
 
   <main>
     <div class="export-panel" id="exportPanel">
-      <p>Copy the JSON below and replace the <code>RAW = [...]</code> array in <strong>chapelwood-resources.html</strong> to publish your changes.</p>
+      <p>Copy the JSON below and replace the <code>RAW = [...]</code> array in <strong>index.html</strong> to publish your changes.</p>
       <textarea id="exportTA" readonly></textarea>
       <button class="copy-btn" onclick="copyExport()">📋 Copy to Clipboard</button>
     </div>
@@ -697,7 +697,7 @@ function checkPw() {
 
 function logout() {
   sessionStorage.removeItem('cwAdmin');
-  window.location.href = 'https://pmeiller.github.io/Chapelwood-Resource-Tool/chapelwood-resources.html';
+  window.location.href = 'https://pmeiller.github.io/Chapelwood-Resource-Tool/';
 }
 
 // Auto-login if session is still active

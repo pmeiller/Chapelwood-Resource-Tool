@@ -25,7 +25,7 @@ A two-screen web app that helps Chapelwood UMC staff and volunteers find communi
 ```
 resources.json          ← the data (GitHub)
       ↑ publish              ↓ fetch on load
-chapelwood-admin.html   chapelwood-resources.html
+admin-tool.html   index.html
 (password-protected      (public viewer,
  editor)                 GitHub Pages)
       ↑ pull / publish
@@ -42,8 +42,8 @@ The Google Sheet is an **editor**, not the source of truth. It pulls from `resou
 | File | Purpose |
 |---|---|
 | `resources.json` | All resource data — 20-column JSON array |
-| `chapelwood-resources.html` | Public viewer — category tiles, keyword search, PDF export, QR codes |
-| `chapelwood-admin.html` | Admin editor — add/edit/delete resources, publish to GitHub |
+| `index.html` | Public viewer — category tiles, keyword search, PDF export, QR codes |
+| `admin-tool.html` | Admin editor — add/edit/delete resources, publish to GitHub |
 | `Code.gs` | Google Apps Script — powers the Sheet's pull/publish workflow |
 
 ---
@@ -62,13 +62,13 @@ git commit -m "..."
 git push
 ```
 
-**Version rule:** Before every `git push`, increment `const VERSION` in `chapelwood-resources.html` by 0.01. Include the version bump in the same commit.
+**Version rule:** Before every `git push`, increment `const VERSION` in `index.html` by 0.01. Include the version bump in the same commit.
 
 ---
 
 ## Admin Tool
 
-**URL:** https://pmeiller.github.io/Chapelwood-Resource-Tool/chapelwood-admin.html  
+**URL:** https://pmeiller.github.io/Chapelwood-Resource-Tool/admin-tool.html  
 **Password:** `Amber`
 
 The admin tool lets authorized staff:
@@ -118,8 +118,8 @@ Application, Other Info, Duplicate?, Verified
 ## Local Working Copies
 
 Mirror copies are kept in `~/Claude/` in sync with the repo after every push:
-- `~/Claude/chapelwood-resources.html`
-- `~/Claude/chapelwood-admin.html`
+- `~/Claude/index.html`
+- `~/Claude/admin-tool.html`
 
 ---
 
@@ -130,4 +130,4 @@ Mirror copies are kept in `~/Claude/` in sync with the repo after every push:
 - **PDF export** — uses jsPDF 2.5.1 + qrcode-generator 1.4.4 (both from cdnjs), loaded on demand
 - **QR codes** — generated with `qrcode-generator` (not the npm `qrcode` package, which fails in browsers); uses GIF→canvas→PNG pipeline
 - **GitHub PAT** — stored in `localStorage` (`cwGithubToken`) in the browser; never committed to the repo
-- **Version** — `const VERSION` in `chapelwood-resources.html`; increment by 0.01 on every push; clicking the version number in the footer opens the changelog modal
+- **Version** — `const VERSION` in `index.html`; increment by 0.01 on every push; clicking the version number in the footer opens the changelog modal
