@@ -668,7 +668,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.17';
+const VERSION = '0.18';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -954,6 +954,10 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.18', date: 'May 2026', notes: [
+    'Admin: Verified column now shows formatted date (e.g. May 6, 2026) with color coding — green (<6 mo), yellow (6–12 mo), red (>12 mo)',
+    'Admin: Column filter dropdowns added for Organization, Hot List, Type, SubType, Access, and Verified status',
+  ]},
   { version: '0.17', date: 'May 2026', notes: [
     '211 Website button added to header — opens United Way Houston referral site',
     'Clicking the Chapelwood banner now returns to the homepage on all pages',

@@ -312,9 +312,34 @@
   .access-rest { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
   .access-serv { background: #fce4ec; color: #ad1457; border-color: #f48fb1; }
 
-  .v-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
-  .v-green { background: #4caf50; }
+  .v-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
+  .v-green  { background: #4caf50; }
+  .v-yellow { background: #fbc02d; }
+  .v-red    { background: #e53935; }
   .v-orange { background: #ffa726; }
+  .ver-green  { color: #2e7d32; font-weight: 600; }
+  .ver-yellow { color: #f57f17; font-weight: 600; }
+  .ver-red    { color: #c62828; font-weight: 600; }
+  .ver-none   { color: var(--muted); }
+
+  /* ── COLUMN FILTER INPUTS (inside thead) ── */
+  .th-inner { display: flex; flex-direction: column; gap: 5px; }
+  .th-label { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+  .col-filter {
+    width: 100%;
+    font-size: 0.68rem;
+    padding: 3px 5px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .col-filter option { background: #1a1a2e; color: #fff; }
+  .col-filter:focus  { border-color: rgba(255,255,255,0.6); }
 
   .row-actions { display: flex; gap: 6px; }
   .icon-btn {
@@ -551,13 +576,60 @@
       <table>
         <thead>
           <tr>
-            <th class="col-name sortable" data-sort="Resource Name" onclick="sortBy('Resource Name')">Resource Name<i class="sort-icon"></i></th>
-            <th class="col-org sortable" data-sort="Organization Name" onclick="sortBy('Organization Name')">Organization<i class="sort-icon"></i></th>
-            <th class="col-hotlist sortable" data-sort="Hot List?" onclick="sortBy('Hot List?')">Hot<i class="sort-icon"></i></th>
-            <th class="col-type sortable" data-sort="Resource Type" onclick="sortBy('Resource Type')">Type<i class="sort-icon"></i></th>
-            <th class="col-subtype sortable" data-sort="Resource SubType" onclick="sortBy('Resource SubType')">SubType<i class="sort-icon"></i></th>
-            <th class="col-access sortable" data-sort="Public Access?" onclick="sortBy('Public Access?')">Access<i class="sort-icon"></i></th>
-            <th class="col-verified sortable" data-sort="Verified" onclick="sortBy('Verified')">Verified<i class="sort-icon"></i></th>
+            <th class="col-name sortable" data-sort="Resource Name" onclick="sortBy('Resource Name')">
+              <div class="th-label">Resource Name<i class="sort-icon"></i></div>
+            </th>
+            <th class="col-org" data-sort="Organization Name">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Organization Name')">Organization<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-org" onchange="renderTable()"><option value="">All</option></select>
+              </div>
+            </th>
+            <th class="col-hotlist" data-sort="Hot List?">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Hot List?')">Hot<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-hot" onchange="renderTable()">
+                  <option value="">All</option>
+                  <option value="hot">HOT only</option>
+                  <option value="not">Not HOT</option>
+                </select>
+              </div>
+            </th>
+            <th class="col-type" data-sort="Resource Type">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Resource Type')">Type<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-type" onchange="renderTable()"><option value="">All</option></select>
+              </div>
+            </th>
+            <th class="col-subtype" data-sort="Resource SubType">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Resource SubType')">SubType<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-subtype" onchange="renderTable()"><option value="">All</option></select>
+              </div>
+            </th>
+            <th class="col-access" data-sort="Public Access?">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Public Access?')">Access<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-access" onchange="renderTable()">
+                  <option value="">All</option>
+                  <option value="public">Public</option>
+                  <option value="restricted">Restricted</option>
+                  <option value="serving">Serving Ministry</option>
+                </select>
+              </div>
+            </th>
+            <th class="col-verified" data-sort="Verified">
+              <div class="th-inner">
+                <div class="th-label" onclick="sortBy('Verified')">Verified<i class="sort-icon"></i></div>
+                <select class="col-filter" id="flt-verified" onchange="renderTable()">
+                  <option value="">All</option>
+                  <option value="green">🟢 Current (&lt;6mo)</option>
+                  <option value="yellow">🟡 Aging (6–12mo)</option>
+                  <option value="red">🔴 Stale (&gt;12mo)</option>
+                  <option value="unverified">⚪ Unverified</option>
+                </select>
+              </div>
+            </th>
             <th class="col-actions">Actions</th>
           </tr>
         </thead>
@@ -794,6 +866,7 @@ async function fetchResourcesData() {
     if (Array.isArray(fresh) && fresh.length > 0 && !localStorage.getItem('cwResources')) {
       resources = fresh;
       await saveData(resources);
+      updateFilterOptions();
       renderTable();
     }
   } catch (e) { console.warn('Could not load resources.json:', e); }
@@ -809,6 +882,42 @@ function sortBy(col) {
   if (sortCol === col) { sortDir = -sortDir; }
   else { sortCol = col; sortDir = 1; }
   renderTable();
+}
+
+// ── Verified date helpers ─────────────────────────────────────────────────────
+function verifiedAge(verified) {
+  if (!verified || verified === 'NEED VERIFICATION') return 'unverified';
+  const dateStr = verified.toString().split('T')[0].substring(0, 10);
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return 'unverified';
+  const monthsAgo = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
+  if (monthsAgo < 6)  return 'green';
+  if (monthsAgo < 12) return 'yellow';
+  return 'red';
+}
+
+function formatVerifiedDate(verified) {
+  if (!verified || verified === 'NEED VERIFICATION') return null;
+  const dateStr = verified.toString().split('T')[0].substring(0, 10);
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ── Column filter options ─────────────────────────────────────────────────────
+function updateFilterOptions() {
+  const populate = (id, values) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All</option>' +
+      [...new Set(values.filter(Boolean))].sort()
+        .map(v => `<option value="${v}">${esc(v)}</option>`).join('');
+    if (cur) sel.value = cur; // restore selection
+  };
+  populate('flt-org',     resources.map(r => r['Organization Name']));
+  populate('flt-type',    resources.map(r => r['Resource Type']));
+  populate('flt-subtype', resources.map(r => r['Resource SubType']));
 }
 
 // ── Sticky offsets & table height — recalculate on load/resize ──────────────
@@ -857,6 +966,7 @@ async function discardChanges() {
   resources = [];
   renderTable();
   await fetchResourcesData();
+  updateFilterOptions();
   showToast('Changes discarded — reloaded from GitHub', 'success');
 }
 
@@ -868,6 +978,7 @@ function init() {
   const types = [...new Set(resources.map(r => r['Resource Type']).filter(Boolean))].sort();
   const dl = document.getElementById('typeList');
   dl.innerHTML = types.map(t => `<option value="${t}">`).join('');
+  updateFilterOptions();
   renderTable();
   fetchResourcesData();
   // Restore dirty banner if session was dirty before reload
@@ -886,6 +997,24 @@ function renderTable() {
     ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource SubType','Resource Description']
         .some(k => r[k] && r[k].toLowerCase().includes(q)))
     : resources.slice();
+
+  // Column filters
+  const fOrg      = document.getElementById('flt-org')?.value || '';
+  const fHot      = document.getElementById('flt-hot')?.value || '';
+  const fType     = document.getElementById('flt-type')?.value || '';
+  const fSubtype  = document.getElementById('flt-subtype')?.value || '';
+  const fAccess   = document.getElementById('flt-access')?.value || '';
+  const fVerified = document.getElementById('flt-verified')?.value || '';
+
+  if (fOrg)     filtered = filtered.filter(r => r['Organization Name'] === fOrg);
+  if (fType)    filtered = filtered.filter(r => r['Resource Type'] === fType);
+  if (fSubtype) filtered = filtered.filter(r => r['Resource SubType'] === fSubtype);
+  if (fHot === 'hot') filtered = filtered.filter(r => { const h = r['Hot List?']; return h && h !== 'null' && h.toLowerCase() !== 'no' && h.trim() !== ''; });
+  if (fHot === 'not') filtered = filtered.filter(r => { const h = r['Hot List?']; return !h || h === 'null' || h.toLowerCase() === 'no' || h.trim() === ''; });
+  if (fAccess === 'public')     filtered = filtered.filter(r => !(r['Public Access?'] || '').toLowerCase().includes('restricted') && !(r['Public Access?'] || '').toLowerCase().includes('serving'));
+  if (fAccess === 'restricted') filtered = filtered.filter(r => (r['Public Access?'] || '').toLowerCase().includes('restricted'));
+  if (fAccess === 'serving')    filtered = filtered.filter(r => (r['Public Access?'] || '').toLowerCase().includes('serving'));
+  if (fVerified) filtered = filtered.filter(r => verifiedAge(r['Verified']) === fVerified);
 
   // Sort
   if (sortCol) {
@@ -930,13 +1059,14 @@ function renderTable() {
     const hotBadge = (hot && hot !== 'null' && hot.toString().toLowerCase() !== 'no' && hot.toString().trim() !== '')
       ? `<span class="hot-badge">HOT</span>` : '';
 
-    const verified = r['Verified'] || '';
-    const verDate = verified ? verified.toString().split('T')[0].substring(0, 10) : '';
-    const vDot = verDate && verDate !== 'NEED VERIFICATION'
-      ? `<span class="v-dot v-green"></span>${verDate}`
-      : verified === 'NEED VERIFICATION'
-        ? `<span class="v-dot v-orange"></span>Needs check`
-        : `<span class="v-dot v-orange"></span>Unverified`;
+    const age = verifiedAge(r['Verified']);
+    const fmtDate = formatVerifiedDate(r['Verified']);
+    const ageClass  = { green: 'v-green', yellow: 'v-yellow', red: 'v-red', unverified: 'v-orange' }[age];
+    const textClass = { green: 'ver-green', yellow: 'ver-yellow', red: 'ver-red', unverified: 'ver-none' }[age];
+    const vDisplay = age === 'unverified'
+      ? (r['Verified'] === 'NEED VERIFICATION' ? 'Needs check' : 'Unverified')
+      : fmtDate;
+    const vDot = `<span class="v-dot ${ageClass}"></span><span class="${textClass}">${vDisplay}</span>`;
 
     return `<tr>
       <td class="col-name">${esc(r['Resource Name'] || r['Organization Name'] || '—')}</td>
@@ -945,7 +1075,7 @@ function renderTable() {
       <td class="col-type"><span class="type-pill">${esc(r['Resource Type'] || '—')}</span></td>
       <td class="col-subtype">${esc(r['Resource SubType'] || '')}</td>
       <td class="col-access"><span class="type-pill ${accessCls}">${accessShort}</span></td>
-      <td class="col-verified" style="font-size:0.78rem; color:var(--muted)">${vDot}</td>
+      <td class="col-verified">${vDot}</td>
       <td class="col-actions">
         <div class="row-actions">
           <button class="icon-btn" title="Edit" onclick="openEditModal(${realIndex})">✏️</button>
