@@ -253,10 +253,6 @@
     box-shadow: 0 3px 12px rgba(191,54,12,0.4);
   }
 
-  /* Hot-list section injected below categories in emergency mode */
-  #hotListSection { display: none; }
-  #hotListSection .section-heading { color: #bf360c; }
-  body.emergency-mode #hotListSection { display: block; }
 
   /* ── TOOLTIP (shared) ────────────────────────────── */
   .has-tooltip {
@@ -742,12 +738,6 @@
     <div class="category-grid" id="categoryGrid"></div>
   </div>
 
-  <!-- Emergency Hot-List Section (shown below categories in emergency mode) -->
-  <div id="hotListSection">
-    <p class="section-heading">🚨 Emergency Resources — Hot List</p>
-    <div class="cards-list" id="hotListCards"></div>
-  </div>
-
   <!-- Results View -->
   <div id="resultsView">
     <div class="results-header">
@@ -777,7 +767,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.20';
+const VERSION = '0.21';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -921,12 +911,21 @@ function buildCategoryTiles() {
 }
 
 // ── SHOW CATEGORY ─────────────────────────────────────────────────────────────
+function isHot(r) {
+  const h = r['Hot List?'];
+  return h && h !== 'null' && h.toString().toLowerCase() !== 'no' && h.toString().trim() !== '';
+}
+
 function showCategory(cat) {
   currentCategory = cat;
   currentSearch = '';
   document.getElementById('searchInput').value = '';
   document.getElementById('clearBtn').classList.remove('visible');
-  renderResults(cat.label, resources.filter(r => getCategoryForResource(r) === cat.key));
+  const emergency = document.getElementById('emergencyToggle')?.checked;
+  const catResources = resources.filter(r => getCategoryForResource(r) === cat.key);
+  const filtered = emergency ? catResources.filter(isHot) : catResources;
+  const title = emergency ? `🚨 ${cat.label} — Emergency` : cat.label;
+  renderResults(title, filtered);
 }
 
 // ── CARD BUILDER (shared) ─────────────────────────────────────────────────────
@@ -1008,7 +1007,6 @@ function renderResults(title, resources) {
   const filtered = filterData(resources);
   _pdfResources = filtered;
   document.getElementById('categoryView').style.display = 'none';
-  document.getElementById('hotListSection').style.display = 'none';
   document.getElementById('resultsView').style.display = 'block';
   document.getElementById('resultsTitle').textContent = title;
   document.getElementById('resultsCount').textContent = `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`;
@@ -1034,10 +1032,6 @@ function showCategories() {
   document.getElementById('resultsView').style.display = 'none';
   document.getElementById('categoryView').style.display = 'block';
   buildCategoryTiles();
-  // Restore hot-list section if emergency mode is still on
-  if (document.getElementById('emergencyToggle')?.checked) {
-    document.getElementById('hotListSection').style.display = 'block';
-  }
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
@@ -1073,29 +1067,9 @@ function applyEmergencyMode() {
   document.body.classList.toggle('emergency-mode', on);
   document.getElementById('emgLblNo').classList.toggle('lbl-active', !on);
   document.getElementById('emgLblYes').classList.toggle('lbl-active', on);
-
-  const hotSection = document.getElementById('hotListSection');
-  const hotCards = document.getElementById('hotListCards');
-
-  if (on) {
-    // Keep categories visible; render hot-list cards below them
-    document.getElementById('categoryView').style.display = 'block';
-    document.getElementById('resultsView').style.display = 'none';
-    hotCards.innerHTML = '';
-    const hotResources = resources.filter(r => {
-      const h = r['Hot List?'];
-      return h && h !== 'null' && h.toString().toLowerCase() !== 'no' && h.toString().trim() !== '';
-    });
-    if (hotResources.length === 0) {
-      hotCards.innerHTML = '<div class="no-results"><p>No hot-list resources found.</p></div>';
-    } else {
-      hotResources.forEach(r => hotCards.appendChild(buildCard(r, '#bf360c', r)));
-    }
-    hotSection.style.display = 'block';
-  } else {
-    hotSection.style.display = 'none';
-    hotCards.innerHTML = '';
-  }
+  // If a category is currently open, re-render it with the new filter state
+  if (currentCategory) showCategory(currentCategory);
+  else showCategories();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -1105,6 +1079,9 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.21', date: 'May 2026', notes: [
+    'Emergency mode: category grid stays visible; selecting a category shows only that category\'s hot-list resources',
+  ]},
   { version: '0.20', date: 'May 2026', notes: [
     'Emergency mode: category grid stays visible; hot-list resources appear in a separate section below it',
     'Emergency banner: 🚨 icons are static (no pulse), text and toggle centered and grouped closer together',
