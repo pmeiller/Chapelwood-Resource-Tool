@@ -209,10 +209,45 @@
   /* ── TOOLBAR (sticky) ── */
   .toolbar { position: sticky; top: var(--header-h, 68px); z-index: 99; }
 
+  /* ── DIRTY BANNER ── */
+  #dirtyBanner {
+    display: none;
+    background: #b71c1c;
+    color: #fff;
+    padding: 8px 24px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: var(--toolbar-bottom, 130px);
+    z-index: 98;
+  }
+  #dirtyBanner.visible { display: flex; }
+  #dirtyBanner .banner-btn {
+    padding: 4px 14px;
+    border-radius: 6px;
+    border: none;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #dirtyBanner .banner-publish { background: #fff; color: #b71c1c; }
+  #dirtyBanner .banner-discard { background: rgba(255,255,255,0.2); color: #fff; }
+  #dirtyBanner .banner-spacer  { margin-left: auto; }
+
   /* ── TABLE ── */
   main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
 
-  .table-wrap { background: var(--white); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow-x: auto; }
+  /* table-wrap is its own scroll container so thead sticky top:0 always works */
+  .table-wrap {
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    overflow: auto;
+    max-height: var(--table-max-h, 70vh);
+  }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
   thead th {
@@ -226,7 +261,8 @@
     letter-spacing: 0.05em;
     white-space: nowrap;
     position: sticky;
-    top: var(--sticky-offset, 128px);
+    top: 0;
+    z-index: 10;
     user-select: none;
   }
   thead th.sortable { cursor: pointer; }
@@ -497,38 +533,30 @@
       <input type="text" id="adminSearch" placeholder="Search resources…" oninput="renderTable()">
     </div>
     <button class="btn btn-primary" onclick="openAddModal()">＋ Add Resource</button>
-    <button class="btn btn-ghost" onclick="toggleExport()">⬇ Export JSON</button>
-
-    <span class="bake-wrap">
-      <button class="btn btn-bake" onclick="publishToGitHub()" id="publishBtn">☁ Publish</button>
-      <span class="tooltip-box">Downloads (and optionally pushes to GitHub) a version of <strong>index.html</strong> with current data baked in as instant-load fallback. No more waiting for the sheet to load!</span>
-    </span>
+    <button class="btn btn-bake" onclick="publishToGitHub()" id="publishBtn">☁ Publish</button>
     <span class="record-count" id="recordCount"></span>
     <span id="saveStatus"></span>
   </div>
 
-  <!-- Bake stamp — shows last bake time -->
-  <div id="bakeStamp" style="display:none; background:#f0f4ff; border-bottom:1px solid #c7d7f5; padding:6px 24px; font-size:0.78rem; color:#1565c0; font-weight:600;">
-    Last baked: <span id="bakeTime"></span>
+  <!-- Unpublished changes banner -->
+  <div id="dirtyBanner">
+    <span>⚠️ You have unpublished changes</span>
+    <span class="banner-spacer"></span>
+    <button class="banner-btn banner-publish" onclick="publishToGitHub()">☁ Publish Now</button>
+    <button class="banner-btn banner-discard" onclick="discardChanges()">Discard Changes</button>
   </div>
 
   <main>
-    <div class="export-panel" id="exportPanel">
-      <p>Copy the JSON below and replace the <code>RAW = [...]</code> array in <strong>index.html</strong> to publish your changes.</p>
-      <textarea id="exportTA" readonly></textarea>
-      <button class="copy-btn" onclick="copyExport()">📋 Copy to Clipboard</button>
-    </div>
-
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th class="col-name sortable" data-sort="Resource Name" onclick="sortBy('Resource Name')">Resource Name<i class="sort-icon"></i></th>
             <th class="col-org sortable" data-sort="Organization Name" onclick="sortBy('Organization Name')">Organization<i class="sort-icon"></i></th>
+            <th class="col-hotlist sortable" data-sort="Hot List?" onclick="sortBy('Hot List?')">Hot<i class="sort-icon"></i></th>
             <th class="col-type sortable" data-sort="Resource Type" onclick="sortBy('Resource Type')">Type<i class="sort-icon"></i></th>
             <th class="col-subtype sortable" data-sort="Resource SubType" onclick="sortBy('Resource SubType')">SubType<i class="sort-icon"></i></th>
             <th class="col-access sortable" data-sort="Public Access?" onclick="sortBy('Public Access?')">Access<i class="sort-icon"></i></th>
-            <th class="col-hotlist sortable" data-sort="Hot List?" onclick="sortBy('Hot List?')">Hot<i class="sort-icon"></i></th>
             <th class="col-verified sortable" data-sort="Verified" onclick="sortBy('Verified')">Verified<i class="sort-icon"></i></th>
             <th class="col-actions">Actions</th>
           </tr>
@@ -783,15 +811,54 @@ function sortBy(col) {
   renderTable();
 }
 
-// ── Sticky offset — measure header height so thead sticks correctly ──────────
+// ── Sticky offsets & table height — recalculate on load/resize ──────────────
 function updateStickyOffset() {
   const hh = document.querySelector('header')?.offsetHeight || 0;
-  document.documentElement.style.setProperty('--header-h', hh + 'px');
   const th = document.querySelector('.toolbar')?.offsetHeight || 0;
-  document.documentElement.style.setProperty('--sticky-offset', (hh + th) + 'px');
+  const db = document.getElementById('dirtyBanner')?.offsetHeight || 0;
+  document.documentElement.style.setProperty('--header-h', hh + 'px');
+  document.documentElement.style.setProperty('--toolbar-bottom', (hh + th) + 'px');
+  // table fills remaining viewport height minus header, toolbar, banner, and some breathing room
+  const tableMax = window.innerHeight - hh - th - db - 60;
+  document.documentElement.style.setProperty('--table-max-h', Math.max(200, tableMax) + 'px');
 }
 window.addEventListener('load', updateStickyOffset);
 window.addEventListener('resize', updateStickyOffset);
+
+// ── Unsaved changes warning on browser close/refresh ────────────────────────
+window.addEventListener('beforeunload', function(e) {
+  if (isDirty()) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// DIRTY STATE
+// ═══════════════════════════════════════════════════════════════════════
+
+function isDirty() {
+  return sessionStorage.getItem('cwDirty') === '1';
+}
+
+function setDirty(flag) {
+  sessionStorage.setItem('cwDirty', flag ? '1' : '0');
+  const banner = document.getElementById('dirtyBanner');
+  if (banner) {
+    banner.classList.toggle('visible', !!flag);
+    updateStickyOffset(); // recalculate table height since banner changed size
+  }
+}
+
+async function discardChanges() {
+  if (!confirm('Discard all unpublished changes and reload from GitHub?')) return;
+  localStorage.removeItem('cwResources');
+  setDirty(false);
+  resources = [];
+  renderTable();
+  await fetchResourcesData();
+  showToast('Changes discarded — reloaded from GitHub', 'success');
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // INIT
@@ -803,6 +870,8 @@ function init() {
   dl.innerHTML = types.map(t => `<option value="${t}">`).join('');
   renderTable();
   fetchResourcesData();
+  // Restore dirty banner if session was dirty before reload
+  if (isDirty()) setDirty(true);
 }
 if (sessionStorage.getItem('cwAdmin') === '1') init();
 
@@ -872,10 +941,10 @@ function renderTable() {
     return `<tr>
       <td class="col-name">${esc(r['Resource Name'] || r['Organization Name'] || '—')}</td>
       <td class="col-org">${esc(r['Organization Name'] || '—')}</td>
+      <td class="col-hotlist">${hotBadge}</td>
       <td class="col-type"><span class="type-pill">${esc(r['Resource Type'] || '—')}</span></td>
       <td class="col-subtype">${esc(r['Resource SubType'] || '')}</td>
       <td class="col-access"><span class="type-pill ${accessCls}">${accessShort}</span></td>
-      <td class="col-hotlist">${hotBadge}</td>
       <td class="col-verified" style="font-size:0.78rem; color:var(--muted)">${vDot}</td>
       <td class="col-actions">
         <div class="row-actions">
@@ -972,6 +1041,7 @@ async function saveResource() {
   }
   closeModal('editModal');
   renderTable();
+  setDirty(true);
   await saveData(resources);
 }
 
@@ -991,28 +1061,11 @@ async function confirmDelete() {
   renderTable();
   showToast(`"${name}" deleted`, 'danger');
   deletingIndex = null;
+  setDirty(true);
   await saveData(resources);
 }
 
 
-// ═══════════════════════════════════════════════════════════════════════
-// EXPORT JSON
-// ═══════════════════════════════════════════════════════════════════════
-
-function toggleExport() {
-  const panel = document.getElementById('exportPanel');
-  const isOpen = panel.classList.toggle('open');
-  if (isOpen) {
-    document.getElementById('exportTA').value = JSON.stringify(resources, null, 2);
-  }
-}
-
-function copyExport() {
-  const ta = document.getElementById('exportTA');
-  ta.select();
-  document.execCommand('copy');
-  showToast('Copied to clipboard ✓', 'success');
-}
 
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1104,8 +1157,7 @@ async function publishToGitHub() {
       return;
     }
 
-    localStorage.setItem('cwBakeTime', stamp);
-    showPublishStamp(stamp);
+    setDirty(false);
     showToast(`☁ Published! ${resources.length} resources live in ~30 sec.`, 'success');
 
   } finally {
@@ -1114,16 +1166,6 @@ async function publishToGitHub() {
   }
 }
 
-function showPublishStamp(stamp) {
-  const div = document.getElementById('bakeStamp');
-  const span = document.getElementById('bakeTime');
-  if (div && span) { span.textContent = stamp; div.style.display = 'block'; }
-}
-
-(function restorePublishStamp() {
-  const saved = localStorage.getItem('cwBakeTime');
-  if (saved) showPublishStamp(saved);
-})();
 
 // ═══════════════════════════════════════════════════════════════════════
 // MODAL HELPERS
