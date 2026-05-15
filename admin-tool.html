@@ -169,6 +169,14 @@
     color: #fff;
     box-shadow: 0 2px 6px rgba(230,81,0,0.3);
   }
+  .btn-clear-filter {
+    background: rgba(0,0,0,0.06);
+    color: var(--dark);
+    border: 1px solid rgba(0,0,0,0.18);
+    font-size: 0.78rem;
+    padding: 5px 10px;
+  }
+  .btn-clear-filter:hover { background: rgba(0,0,0,0.12); }
   .record-count { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-left: auto; white-space: nowrap; }
 
   /* ── BAKE TOOLTIP ── */
@@ -559,6 +567,7 @@
     </div>
     <button class="btn btn-primary" onclick="openAddModal()">＋ Add Resource</button>
     <button class="btn btn-bake" onclick="publishToGitHub()" id="publishBtn">☁ Publish</button>
+    <button class="btn btn-clear-filter" id="clearFiltersBtn" onclick="clearFilters()" style="display:none">✕ Clear Filters</button>
     <span class="record-count" id="recordCount"></span>
     <span id="saveStatus"></span>
   </div>
@@ -885,11 +894,15 @@ function sortBy(col) {
 }
 
 // ── Verified date helpers ─────────────────────────────────────────────────────
+function parseVerifiedDate(verified) {
+  if (!verified || verified === 'NEED VERIFICATION') return null;
+  const d = new Date(verified);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function verifiedAge(verified) {
-  if (!verified || verified === 'NEED VERIFICATION') return 'unverified';
-  const dateStr = verified.toString().split('T')[0].substring(0, 10);
-  const d = new Date(dateStr + 'T00:00:00');
-  if (isNaN(d.getTime())) return 'unverified';
+  const d = parseVerifiedDate(verified);
+  if (!d) return 'unverified';
   const monthsAgo = (Date.now() - d.getTime()) / (1000 * 60 * 60 * 24 * 30.44);
   if (monthsAgo < 6)  return 'green';
   if (monthsAgo < 12) return 'yellow';
@@ -897,10 +910,8 @@ function verifiedAge(verified) {
 }
 
 function formatVerifiedDate(verified) {
-  if (!verified || verified === 'NEED VERIFICATION') return null;
-  const dateStr = verified.toString().split('T')[0].substring(0, 10);
-  const d = new Date(dateStr + 'T00:00:00');
-  if (isNaN(d.getTime())) return dateStr;
+  const d = parseVerifiedDate(verified);
+  if (!d) return null;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -918,6 +929,23 @@ function updateFilterOptions() {
   populate('flt-org',     resources.map(r => r['Organization Name']));
   populate('flt-type',    resources.map(r => r['Resource Type']));
   populate('flt-subtype', resources.map(r => r['Resource SubType']));
+}
+
+function clearFilters() {
+  ['flt-org','flt-hot','flt-type','flt-subtype','flt-access','flt-verified'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('adminSearch').value = '';
+  renderTable();
+}
+
+function updateClearFiltersBtn() {
+  const active = ['flt-org','flt-hot','flt-type','flt-subtype','flt-access','flt-verified']
+    .some(id => document.getElementById(id)?.value) ||
+    document.getElementById('adminSearch')?.value;
+  const btn = document.getElementById('clearFiltersBtn');
+  if (btn) btn.style.display = active ? '' : 'none';
 }
 
 // ── Sticky offsets & table height — recalculate on load/resize ──────────────
@@ -1035,6 +1063,7 @@ function renderTable() {
 
   document.getElementById('recordCount').textContent =
     `${filtered.length} of ${resources.length} resource${resources.length !== 1 ? 's' : ''}`;
+  updateClearFiltersBtn();
 
   const tbody = document.getElementById('tableBody');
   if (filtered.length === 0) {
