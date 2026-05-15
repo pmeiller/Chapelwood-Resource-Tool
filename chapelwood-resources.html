@@ -624,7 +624,7 @@
 // ── GOOGLE SHEETS LIVE DATA ────────────────────────────────────────────────
 // Live data endpoint — Apps Script GET returns JSON directly from the sheet.
 // This works from local file:// without CORS issues.
-const VERSION = '0.10';
+const VERSION = '0.11';
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec";
 
 // CSV column order (must match sheet headers exactly)
@@ -1024,13 +1024,10 @@ async function generateResourcePDF(r) {
   const mx = 18;
   const pageW = 215.9;
   const pageH = 279.4;
-  const qrSize = 42;
-  const qrX = pageW - mx - qrSize;
-  const qrTopY = 20;
+  const mainW = pageW - mx * 2;
 
   const website = r['Public Website'];
   const hasWebsite = website && !isNA(website);
-  const mainW = hasWebsite ? qrX - mx - 4 : pageW - mx * 2;
 
   // Header bar
   doc.setFillColor(21, 101, 192);
@@ -1075,18 +1072,6 @@ async function generateResourcePDF(r) {
     doc.setTextColor(140, 140, 140);
     doc.text(typeParts.join('  ·  '), mx, y);
     y += 5;
-  }
-
-  // QR code (top-right)
-  if (hasWebsite) {
-    try {
-      const qrDataUrl = await QRCode.toDataURL(website, { width: 180, margin: 1 });
-      doc.addImage(qrDataUrl, 'PNG', qrX, qrTopY, qrSize, qrSize);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(140, 140, 140);
-      doc.text('Scan for website', qrX + qrSize / 2, qrTopY + qrSize + 4, { align: 'center' });
-    } catch (e) { console.warn('QR failed:', e); }
   }
 
   // Divider
@@ -1177,6 +1162,24 @@ async function generateResourcePDF(r) {
     y += 6;
   }
 
+  // QR code at bottom (centered, above footer)
+  if (hasWebsite) {
+    try {
+      const qrSize = 36;
+      const qrX = (pageW - qrSize) / 2;
+      const qrY = pageH - 64;
+      const qrDataUrl = await QRCode.toDataURL(website, { width: 200, margin: 1 });
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.3);
+      doc.line(mx, qrY - 8, pageW - mx, qrY - 8);
+      doc.addImage(qrDataUrl, 'PNG', qrX, qrY, qrSize, qrSize);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 140, 140);
+      doc.text('Scan to visit website', pageW / 2, qrY + qrSize + 5, { align: 'center' });
+    } catch (e) { console.warn('QR failed:', e); }
+  }
+
   // Footer
   doc.setDrawColor(210, 210, 210);
   doc.setLineWidth(0.3);
@@ -1187,8 +1190,7 @@ async function generateResourcePDF(r) {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   doc.text(`Chapelwood UMC Resource Finder  ·  Printed ${today}`, pageW / 2, pageH - 9, { align: 'center' });
 
-  const safeName = name.replace(/[^a-z0-9]+/gi, '_').replace(/_{2,}/g, '_').replace(/^_|_$/g, '').slice(0, 50);
-  doc.save(`${safeName}.pdf`);
+  doc.output('dataurlnewwindow');
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
