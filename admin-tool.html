@@ -206,8 +206,11 @@
   }
   .bake-wrap:hover .tooltip-box { display: block; }
 
+  /* ── TOOLBAR (sticky) ── */
+  .toolbar { position: sticky; top: var(--header-h, 68px); z-index: 99; }
+
   /* ── TABLE ── */
-  main { padding: 20px 24px 60px; max-width: 1200px; margin: 0 auto; }
+  main { padding: 20px 24px 60px; max-width: 1400px; margin: 0 auto; }
 
   .table-wrap { background: var(--white); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); overflow-x: auto; }
 
@@ -223,19 +226,41 @@
     letter-spacing: 0.05em;
     white-space: nowrap;
     position: sticky;
-    top: 56px;
+    top: var(--sticky-offset, 128px);
+    user-select: none;
   }
+  thead th.sortable { cursor: pointer; }
+  thead th.sortable:hover { background: #2a2a3e; }
+  .sort-icon { opacity: 0.4; margin-left: 4px; font-style: normal; font-size: 0.7rem; }
+  thead th.sort-asc .sort-icon::after  { content: ' ▲'; opacity: 1; }
+  thead th.sort-desc .sort-icon::after { content: ' ▼'; opacity: 1; }
+  thead th:not(.sort-asc):not(.sort-desc) .sort-icon::after { content: ' ⇅'; }
+
   tbody tr { border-bottom: 1px solid var(--border); }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: #fafafa; }
   td { padding: 10px 12px; vertical-align: top; }
 
-  .col-name { min-width: 180px; max-width: 220px; font-weight: 600; }
-  .col-org   { min-width: 150px; max-width: 180px; color: var(--muted); }
-  .col-type  { min-width: 160px; max-width: 200px; }
-  .col-access { min-width: 130px; }
-  .col-verified { min-width: 100px; }
-  .col-actions { min-width: 110px; white-space: nowrap; }
+  .col-name    { min-width: 180px; max-width: 220px; font-weight: 600; }
+  .col-org     { min-width: 140px; max-width: 180px; color: var(--muted); }
+  .col-type    { min-width: 150px; max-width: 190px; }
+  .col-subtype { min-width: 120px; max-width: 160px; color: var(--muted); font-size: 0.8rem; }
+  .col-access  { min-width: 120px; }
+  .col-hotlist { min-width: 60px; text-align: center; }
+  .col-verified { min-width: 90px; }
+  .col-actions  { min-width: 90px; white-space: nowrap; }
+
+  .hot-badge {
+    display: inline-block;
+    background: #c62828;
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
 
   .type-pill {
     display: inline-block;
@@ -452,12 +477,14 @@
 <div id="app">
 
   <header>
-    <img class="header-logo" src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp" alt="Chapelwood UMC">
-    <div class="header-div"></div>
-    <div class="header-title">
-      Resource Admin
-      <span>Chapelwood UMC · Houston, TX</span>
-    </div>
+    <a href="./" style="display:flex;align-items:center;gap:16px;text-decoration:none;flex:1;min-width:0;">
+      <img class="header-logo" src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp" alt="Chapelwood UMC">
+      <div class="header-div"></div>
+      <div class="header-title">
+        Resource Admin
+        <span>Chapelwood UMC · Houston, TX</span>
+      </div>
+    </a>
     <img class="header-leaves" src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png" alt="">
     <button class="logout-btn" onclick="logout()">Sign Out</button>
   </header>
@@ -496,11 +523,13 @@
       <table>
         <thead>
           <tr>
-            <th class="col-name">Resource Name</th>
-            <th class="col-org">Organization</th>
-            <th class="col-type">Type</th>
-            <th class="col-access">Access</th>
-            <th class="col-verified">Verified</th>
+            <th class="col-name sortable" data-sort="Resource Name" onclick="sortBy('Resource Name')">Resource Name<i class="sort-icon"></i></th>
+            <th class="col-org sortable" data-sort="Organization Name" onclick="sortBy('Organization Name')">Organization<i class="sort-icon"></i></th>
+            <th class="col-type sortable" data-sort="Resource Type" onclick="sortBy('Resource Type')">Type<i class="sort-icon"></i></th>
+            <th class="col-subtype sortable" data-sort="Resource SubType" onclick="sortBy('Resource SubType')">SubType<i class="sort-icon"></i></th>
+            <th class="col-access sortable" data-sort="Public Access?" onclick="sortBy('Public Access?')">Access<i class="sort-icon"></i></th>
+            <th class="col-hotlist sortable" data-sort="Hot List?" onclick="sortBy('Hot List?')">Hot<i class="sort-icon"></i></th>
+            <th class="col-verified sortable" data-sort="Verified" onclick="sortBy('Verified')">Verified<i class="sort-icon"></i></th>
             <th class="col-actions">Actions</th>
           </tr>
         </thead>
@@ -697,7 +726,7 @@ function checkPw() {
 
 function logout() {
   sessionStorage.removeItem('cwAdmin');
-  window.location.href = 'https://pmeiller.github.io/Chapelwood-Resource-Tool/';
+  window.location.href = './';
 }
 
 // Auto-login if session is still active
@@ -745,6 +774,24 @@ async function fetchResourcesData() {
 let resources = loadData();
 let editingIndex = null;
 let deletingIndex = null;
+let sortCol = null;
+let sortDir = 1; // 1 = asc, -1 = desc
+
+function sortBy(col) {
+  if (sortCol === col) { sortDir = -sortDir; }
+  else { sortCol = col; sortDir = 1; }
+  renderTable();
+}
+
+// ── Sticky offset — measure header height so thead sticks correctly ──────────
+function updateStickyOffset() {
+  const hh = document.querySelector('header')?.offsetHeight || 0;
+  document.documentElement.style.setProperty('--header-h', hh + 'px');
+  const th = document.querySelector('.toolbar')?.offsetHeight || 0;
+  document.documentElement.style.setProperty('--sticky-offset', (hh + th) + 'px');
+}
+window.addEventListener('load', updateStickyOffset);
+window.addEventListener('resize', updateStickyOffset);
 
 // ═══════════════════════════════════════════════════════════════════════
 // INIT
@@ -766,17 +813,34 @@ if (sessionStorage.getItem('cwAdmin') === '1') init();
 
 function renderTable() {
   const q = (document.getElementById('adminSearch')?.value || '').toLowerCase();
-  const filtered = q
-    ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource Description']
+  let filtered = q
+    ? resources.filter(r => ['Resource Name','Organization Name','Resource Type','Resource SubType','Resource Description']
         .some(k => r[k] && r[k].toLowerCase().includes(q)))
-    : resources;
+    : resources.slice();
+
+  // Sort
+  if (sortCol) {
+    filtered.sort((a, b) => {
+      const av = (a[sortCol] || '').toString().toLowerCase();
+      const bv = (b[sortCol] || '').toString().toLowerCase();
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+
+  // Update sort indicators on headers
+  document.querySelectorAll('thead th').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === sortCol) {
+      th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    }
+  });
 
   document.getElementById('recordCount').textContent =
     `${filtered.length} of ${resources.length} resource${resources.length !== 1 ? 's' : ''}`;
 
   const tbody = document.getElementById('tableBody');
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="big">🔍</div><p>No resources match your search.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="big">🔍</div><p>No resources match your search.</p></div></td></tr>`;
     return;
   }
 
@@ -793,9 +857,14 @@ function renderTable() {
       : al.includes('restricted') ? '🔑 Restricted'
       : '✅ Public';
 
+    const hot = r['Hot List?'];
+    const hotBadge = (hot && hot !== 'null' && hot.toString().toLowerCase() !== 'no' && hot.toString().trim() !== '')
+      ? `<span class="hot-badge">HOT</span>` : '';
+
     const verified = r['Verified'] || '';
-    const vDot = verified && verified !== 'NEED VERIFICATION'
-      ? `<span class="v-dot v-green"></span>${verified}`
+    const verDate = verified ? verified.toString().split('T')[0].substring(0, 10) : '';
+    const vDot = verDate && verDate !== 'NEED VERIFICATION'
+      ? `<span class="v-dot v-green"></span>${verDate}`
       : verified === 'NEED VERIFICATION'
         ? `<span class="v-dot v-orange"></span>Needs check`
         : `<span class="v-dot v-orange"></span>Unverified`;
@@ -804,7 +873,9 @@ function renderTable() {
       <td class="col-name">${esc(r['Resource Name'] || r['Organization Name'] || '—')}</td>
       <td class="col-org">${esc(r['Organization Name'] || '—')}</td>
       <td class="col-type"><span class="type-pill">${esc(r['Resource Type'] || '—')}</span></td>
+      <td class="col-subtype">${esc(r['Resource SubType'] || '')}</td>
       <td class="col-access"><span class="type-pill ${accessCls}">${accessShort}</span></td>
+      <td class="col-hotlist">${hotBadge}</td>
       <td class="col-verified" style="font-size:0.78rem; color:var(--muted)">${vDot}</td>
       <td class="col-actions">
         <div class="row-actions">

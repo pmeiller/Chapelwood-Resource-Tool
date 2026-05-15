@@ -602,17 +602,20 @@
 <body>
 
 <header>
-  <img class="header-logo"
-    src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp"
-    alt="Chapelwood UMC">
-  <div class="header-divider"></div>
-  <div class="header-title">
-    Houston Resource Finder
-    <span>Volunteer Reference Tool</span>
-  </div>
+  <a href="./" style="display:flex;align-items:center;gap:16px;text-decoration:none;flex:1;min-width:0;">
+    <img class="header-logo"
+      src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp"
+      alt="Chapelwood UMC">
+    <div class="header-divider"></div>
+    <div class="header-title">
+      Houston Resource Finder
+      <span>Volunteer Reference Tool</span>
+    </div>
+  </a>
   <img class="header-leaves"
     src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png"
     alt="">
+  <a href="https://referral.unitedwayhouston.org/" target="_blank" rel="noopener" class="admin-btn">211 Website</a>
   <a href="https://pmeiller.github.io/Chapelwood-Resource-Tool/admin-tool.html" class="admin-btn">Admin</a>
 </header>
 
@@ -665,7 +668,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.16';
+const VERSION = '0.17';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
