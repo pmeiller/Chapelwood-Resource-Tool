@@ -392,6 +392,11 @@
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(0,0,0,0.13);
   }
+  .category-tile.tile-empty {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
 
   .tile-icon {
     width: 44px;
@@ -767,7 +772,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.21';
+const VERSION = '0.22';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -892,18 +897,21 @@ function mapItButton(address) {
 
 // ── BUILD CATEGORY TILES ──────────────────────────────────────────────────────
 function buildCategoryTiles() {
+  const emergency = document.getElementById('emergencyToggle')?.checked;
   const grid = document.getElementById('categoryGrid');
   grid.innerHTML = '';
   CATEGORIES.forEach(cat => {
     const catResources = resources.filter(r => getCategoryForResource(r) === cat.key);
     if (catResources.length === 0) return;
+    const displayCount = emergency ? catResources.filter(isHot).length : catResources.length;
+    const empty = emergency && displayCount === 0;
     const tile = document.createElement('button');
-    tile.className = 'category-tile';
-    tile.onclick = () => showCategory(cat);
+    tile.className = 'category-tile' + (empty ? ' tile-empty' : '');
+    if (!empty) tile.onclick = () => showCategory(cat);
     tile.innerHTML = `
       <div class="tile-icon" style="background:${cat.color}20; color:${cat.color}">${cat.emoji}</div>
       <div class="tile-name">${cat.label}</div>
-      <div class="tile-count">${catResources.length} resource${catResources.length !== 1 ? 's' : ''}</div>
+      <div class="tile-count">${displayCount} resource${displayCount !== 1 ? 's' : ''}</div>
     `;
     grid.appendChild(tile);
   });
@@ -1079,6 +1087,9 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.22', date: 'May 2026', notes: [
+    'Emergency mode: category tiles update to show hot-list resource counts; categories with zero hot-list resources are grayed out and non-clickable',
+  ]},
   { version: '0.21', date: 'May 2026', notes: [
     'Emergency mode: category grid stays visible; selecting a category shows only that category\'s hot-list resources',
   ]},
