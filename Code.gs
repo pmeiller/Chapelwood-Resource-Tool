@@ -29,10 +29,10 @@ var SHEET_NAME = 'Sheet1'; // Change if your tab has a different name
 var HEADERS = [
   'Resource Name',
   'Organization Name',
-  'Program Name',
+  'Program Name (If Applicable)',
   'Resource Type',
-  'Resource Subtype',
-  'This is a HOT list item',
+  'Resource SubType',
+  'Hot List?',
   'Public Access?',
   'Resource Description',
   'Eligibility',
