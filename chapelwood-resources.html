@@ -624,7 +624,7 @@
 // ── GOOGLE SHEETS LIVE DATA ────────────────────────────────────────────────
 // Live data endpoint — Apps Script GET returns JSON directly from the sheet.
 // This works from local file:// without CORS issues.
-const VERSION = '0.11';
+const VERSION = '0.12';
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbwO-NWVlqaeywzxPHg6e_LhWWBfRay6sn1eldda8g7qGV02hr0vhVpKEJU8jOT3yoYJ/exec";
 
 // CSV column order (must match sheet headers exactly)
@@ -1167,8 +1167,10 @@ async function generateResourcePDF(r) {
     try {
       const qrSize = 36;
       const qrX = (pageW - qrSize) / 2;
-      const qrY = pageH - 64;
-      const qrDataUrl = await QRCode.toDataURL(website, { width: 200, margin: 1 });
+      const qrY = pageH - 66;
+      const canvas = document.createElement('canvas');
+      await QRCode.toCanvas(canvas, website, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } });
+      const qrDataUrl = canvas.toDataURL('image/png');
       doc.setDrawColor(220, 220, 220);
       doc.setLineWidth(0.3);
       doc.line(mx, qrY - 8, pageW - mx, qrY - 8);
@@ -1177,7 +1179,7 @@ async function generateResourcePDF(r) {
       doc.setFontSize(7.5);
       doc.setTextColor(140, 140, 140);
       doc.text('Scan to visit website', pageW / 2, qrY + qrSize + 5, { align: 'center' });
-    } catch (e) { console.warn('QR failed:', e); }
+    } catch (e) { console.error('QR failed:', e); }
   }
 
   // Footer
