@@ -1780,5 +1780,27 @@
     "Other Info": null,
     "Duplicate?": null,
     "Verified": null
+  },
+  {
+    "Resource Name": "TEST",
+    "Organization Name": "TEST",
+    "Program Name (If Applicable)": null,
+    "Resource Type": "Childcare",
+    "Resource SubType": null,
+    "Hot List?": "Yes",
+    "Public Access?": "Public Access",
+    "Resource Description": null,
+    "Eligibility": "TEST",
+    "Address": null,
+    "Public Phone Number": null,
+    "Public Email": null,
+    "Public Website": null,
+    "Hours": null,
+    "Walk-ins?": null,
+    "Languages": null,
+    "Application": null,
+    "Other Info": null,
+    "Duplicate?": null,
+    "Verified": null
   }
 ]
