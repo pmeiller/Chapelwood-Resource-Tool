@@ -174,6 +174,84 @@
   .clear-btn:hover { background: var(--border); }
   .clear-btn.visible { display: block; }
 
+  /* ── EMERGENCY BANNER ───────────────────────────────────────────────────── */
+  #emergencyBanner {
+    background: linear-gradient(135deg, #e65100, #bf360c);
+    color: #fff;
+    padding: 13px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  #emergencyBanner:hover { background: linear-gradient(135deg, #f57c00, #d84315); }
+  .emergency-icon { font-size: 1.3rem; flex-shrink: 0; animation: pulse-light 1.4s infinite; }
+  @keyframes pulse-light {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+  }
+  .emergency-text {
+    flex: 1;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  /* Toggle switch */
+  .emg-toggle-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .emg-toggle-labels {
+    display: flex;
+    gap: 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.7);
+  }
+  .emg-toggle-labels .lbl-active { color: #fff; }
+  .emg-switch {
+    position: relative;
+    width: 52px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .emg-switch input { opacity: 0; width: 0; height: 0; }
+  .emg-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.25);
+    border-radius: 26px;
+    cursor: pointer;
+    transition: background 0.25s;
+  }
+  .emg-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .emg-switch input:checked + .emg-slider { background: #fff3; }
+  .emg-switch input:checked + .emg-slider::before { transform: translateX(26px); }
+
+  /* Emergency mode — page background */
+  body.emergency-mode { background: #fff3e0; }
+  body.emergency-mode #emergencyBanner {
+    background: linear-gradient(135deg, #bf360c, #8d1f00);
+    box-shadow: 0 3px 12px rgba(191,54,12,0.4);
+  }
+  body.emergency-mode .emg-slider { background: rgba(255,255,255,0.45); }
+
   /* ── TOOLTIP (shared) ────────────────────────────── */
   .has-tooltip {
     position: relative;
@@ -632,6 +710,23 @@
 </div>
 
 
+<!-- Emergency Banner -->
+<div id="emergencyBanner" onclick="toggleEmergency(event)">
+  <span class="emergency-icon">🚨</span>
+  <span class="emergency-text">Does our neighbor require life-sustaining care in the next 24 hours?<br>Click here for emergency resources.</span>
+  <span class="emergency-icon">🚨</span>
+  <div class="emg-toggle-wrap" onclick="event.stopPropagation()">
+    <div class="emg-toggle-labels">
+      <span id="emgLblNo" class="lbl-active">No</span>
+      <span id="emgLblYes">Yes</span>
+    </div>
+    <label class="emg-switch">
+      <input type="checkbox" id="emergencyToggle" onchange="applyEmergencyMode()">
+      <span class="emg-slider"></span>
+    </label>
+  </div>
+</div>
+
 <main>
   <!-- Category Tiles View -->
   <div id="categoryView">
@@ -668,7 +763,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.18';
+const VERSION = '0.19';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -947,6 +1042,31 @@ function clearSearch() {
   showCategories();
 }
 
+// ── EMERGENCY MODE ───────────────────────────────────────────────────────────
+function toggleEmergency(e) {
+  const toggle = document.getElementById('emergencyToggle');
+  toggle.checked = !toggle.checked;
+  applyEmergencyMode();
+}
+
+function applyEmergencyMode() {
+  const on = document.getElementById('emergencyToggle').checked;
+  document.body.classList.toggle('emergency-mode', on);
+  document.getElementById('emgLblNo').classList.toggle('lbl-active', !on);
+  document.getElementById('emgLblYes').classList.toggle('lbl-active', on);
+
+  if (on) {
+    // Show only hot-list resources across all categories
+    const hotResources = resources.filter(r => {
+      const h = r['Hot List?'];
+      return h && h !== 'null' && h.toString().toLowerCase() !== 'no' && h.toString().trim() !== '';
+    });
+    renderResults('🚨 Emergency Resources', hotResources);
+  } else {
+    showCategories();
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.getElementById('footerVersion').textContent = VERSION;
 buildCategoryTiles();
@@ -954,6 +1074,9 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.19', date: 'May 2026', notes: [
+    'Emergency banner added between search bar and category grid — toggle Yes to highlight hot-list resources and tint the page orange',
+  ]},
   { version: '0.18', date: 'May 2026', notes: [
     'Admin: Verified column now shows formatted date (e.g. May 6, 2026) with color coding — green (<6 mo), yellow (6–12 mo), red (>12 mo)',
     'Admin: Column filter dropdowns added for Organization, Hot List, Type, SubType, Access, and Verified status',
