@@ -180,23 +180,25 @@
     color: #fff;
     padding: 13px 20px;
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     cursor: pointer;
     user-select: none;
     transition: background 0.2s;
   }
   #emergencyBanner:hover { background: linear-gradient(135deg, #f57c00, #d84315); }
-  .emergency-icon { font-size: 1.3rem; flex-shrink: 0; animation: pulse-light 1.4s infinite; }
-  @keyframes pulse-light {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
+  .emergency-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .emg-center {
+    display: flex;
+    align-items: center;
+    gap: 20px;
   }
   .emergency-text {
-    flex: 1;
     font-size: 0.92rem;
     font-weight: 600;
     line-height: 1.35;
+    text-align: center;
   }
   /* Toggle switch */
   .emg-toggle-wrap {
@@ -241,7 +243,7 @@
     transition: transform 0.25s;
     box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
-  .emg-switch input:checked + .emg-slider { background: #fff3; }
+  .emg-switch input:checked + .emg-slider { background: rgba(255,255,255,0.4); }
   .emg-switch input:checked + .emg-slider::before { transform: translateX(26px); }
 
   /* Emergency mode — page background */
@@ -250,7 +252,11 @@
     background: linear-gradient(135deg, #bf360c, #8d1f00);
     box-shadow: 0 3px 12px rgba(191,54,12,0.4);
   }
-  body.emergency-mode .emg-slider { background: rgba(255,255,255,0.45); }
+
+  /* Hot-list section injected below categories in emergency mode */
+  #hotListSection { display: none; }
+  #hotListSection .section-heading { color: #bf360c; }
+  body.emergency-mode #hotListSection { display: block; }
 
   /* ── TOOLTIP (shared) ────────────────────────────── */
   .has-tooltip {
@@ -713,18 +719,20 @@
 <!-- Emergency Banner -->
 <div id="emergencyBanner" onclick="toggleEmergency(event)">
   <span class="emergency-icon">🚨</span>
-  <span class="emergency-text">Does our neighbor require life-sustaining care in the next 24 hours?<br>Click here for emergency resources.</span>
-  <span class="emergency-icon">🚨</span>
-  <div class="emg-toggle-wrap" onclick="event.stopPropagation()">
-    <div class="emg-toggle-labels">
-      <span id="emgLblNo" class="lbl-active">No</span>
-      <span id="emgLblYes">Yes</span>
+  <div class="emg-center">
+    <span class="emergency-text">Does our neighbor require life-sustaining care in the next 24 hours?<br>Click here for emergency resources.</span>
+    <div class="emg-toggle-wrap" onclick="event.stopPropagation()">
+      <div class="emg-toggle-labels">
+        <span id="emgLblNo" class="lbl-active">No</span>
+        <span id="emgLblYes">Yes</span>
+      </div>
+      <label class="emg-switch">
+        <input type="checkbox" id="emergencyToggle" onchange="applyEmergencyMode()">
+        <span class="emg-slider"></span>
+      </label>
     </div>
-    <label class="emg-switch">
-      <input type="checkbox" id="emergencyToggle" onchange="applyEmergencyMode()">
-      <span class="emg-slider"></span>
-    </label>
   </div>
+  <span class="emergency-icon">🚨</span>
 </div>
 
 <main>
@@ -732,6 +740,12 @@
   <div id="categoryView">
     <p class="section-heading">Browse by Category</p>
     <div class="category-grid" id="categoryGrid"></div>
+  </div>
+
+  <!-- Emergency Hot-List Section (shown below categories in emergency mode) -->
+  <div id="hotListSection">
+    <p class="section-heading">🚨 Emergency Resources — Hot List</p>
+    <div class="cards-list" id="hotListCards"></div>
   </div>
 
   <!-- Results View -->
@@ -763,7 +777,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.19';
+const VERSION = '0.20';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -915,6 +929,78 @@ function showCategory(cat) {
   renderResults(cat.label, resources.filter(r => getCategoryForResource(r) === cat.key));
 }
 
+// ── CARD BUILDER (shared) ─────────────────────────────────────────────────────
+function buildCard(r, color, pdfRef) {
+  const card = document.createElement('div');
+  card.className = 'resource-card';
+  card.style.borderLeftColor = color;
+
+  const name = r['Resource Name'] || r['Organization Name'] || 'Unnamed Resource';
+  const org = r['Organization Name'] || '';
+  const prog = r['Program Name (If Applicable)'];
+  const orgLine = [org, prog && prog !== name ? prog : null].filter(Boolean).join(' — ');
+  const desc = r['Resource Description'] || '';
+  const eligibility = r['Eligibility'] || '';
+  const address = r['Address'] || '';
+  const phone = r['Public Phone Number'] || '';
+  const website = r['Public Website'] || '';
+  const hours = r['Hours'] || '';
+  const walkins = r['Walk-ins?'] || '';
+  const langs = r['Languages'] || '';
+  const application = r['Application'] || '';
+  const otherInfo = r['Other Info'] || '';
+  const duplicate = r['Duplicate?'] || '';
+  const verified = r['Verified'] || '';
+
+  const accessBadgeClass = accessClass(r['Public Access?']);
+  const accessText = accessLabel(r['Public Access?']);
+  const tooltipMsg = restrictionTooltipMsg(r);
+  const badgeHTML = tooltipMsg
+    ? `<span class="access-badge ${accessBadgeClass} has-tooltip">${accessText}<span class="tooltip-box">${tooltipMsg}</span></span>`
+    : `<span class="access-badge ${accessBadgeClass}">${accessText}</span>`;
+
+  let verifiedLabel, verifiedDotClass;
+  if (verified && verified !== 'NEED VERIFICATION') {
+    verifiedDotClass = 'verified-dot';
+    verifiedLabel = `✅ Verified<br><span style="opacity:0.75">Last checked: ${verified}</span>`;
+  } else if (verified === 'NEED VERIFICATION') {
+    verifiedDotClass = 'unverified-dot';
+    verifiedLabel = `⚠️ Needs verification<br><span style="opacity:0.75">Data may be outdated</span>`;
+  } else {
+    verifiedDotClass = 'unverified-dot';
+    verifiedLabel = `⚠️ Not yet verified<br><span style="opacity:0.75">Confirm details before referring</span>`;
+  }
+  const verifiedHTML = `<span class="dot-wrap"><span class="${verifiedDotClass}"></span><span class="tooltip-box">${verifiedLabel}</span></span>`;
+
+  let detailsHTML = '';
+  if (!isNA(address)) detailsHTML += `<div class="detail-row"><span class="detail-label">📍</span><span class="detail-value">${address}</span></div>`;
+  if (!isNA(hours)) detailsHTML += `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>`;
+  if (!isNA(walkins)) detailsHTML += `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>`;
+  if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
+  if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
+
+  let footerHTML = '';
+  if (!isNA(website)) footerHTML += `<a class="card-link link-website" href="${website}" target="_blank">🔗 Website</a>`;
+  if (!isNA(phone)) footerHTML += `<a class="card-link link-phone" href="tel:${phone.replace(/[^0-9+]/g,'').split('A')[0]}">📞 ${phone}</a>`;
+  footerHTML += mapItButton(address);
+  footerHTML += `<button class="card-link link-pdf" onclick="generateResourcePDF(${JSON.stringify(pdfRef).replace(/</g,'\\u003c')})">📄 Save PDF</button>`;
+
+  card.innerHTML = `
+    <div class="card-top">
+      <div class="card-name">${name}${verifiedHTML}</div>
+      ${badgeHTML}
+    </div>
+    ${orgLine ? `<div class="card-org">${orgLine}</div>` : ''}
+    ${desc ? `<p class="card-desc">${desc}</p>` : ''}
+    ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}</div>` : ''}
+    ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
+    ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>` : ''}
+    ${duplicate ? `<p class="duplicate-note">ℹ️ Also listed as: ${duplicate}</p>` : ''}
+    ${footerHTML ? `<div class="card-footer">${footerHTML}</div>` : ''}
+  `;
+  return card;
+}
+
 // ── RENDER RESULTS ────────────────────────────────────────────────────────────
 let _pdfResources = [];
 
@@ -922,6 +1008,7 @@ function renderResults(title, resources) {
   const filtered = filterData(resources);
   _pdfResources = filtered;
   document.getElementById('categoryView').style.display = 'none';
+  document.getElementById('hotListSection').style.display = 'none';
   document.getElementById('resultsView').style.display = 'block';
   document.getElementById('resultsTitle').textContent = title;
   document.getElementById('resultsCount').textContent = `${filtered.length} result${filtered.length !== 1 ? 's' : ''}`;
@@ -934,80 +1021,8 @@ function renderResults(title, resources) {
     return;
   }
 
-  // Color for card border
   const catColor = currentCategory ? currentCategory.color : '#333';
-
-  filtered.forEach(r => {
-    const card = document.createElement('div');
-    card.className = 'resource-card';
-    card.style.borderLeftColor = catColor;
-
-    const name = r['Resource Name'] || r['Organization Name'] || 'Unnamed Resource';
-    const org = r['Organization Name'] || '';
-    const prog = r['Program Name (If Applicable)'];
-    const orgLine = [org, prog && prog !== name ? prog : null].filter(Boolean).join(' — ');
-    const desc = r['Resource Description'] || '';
-    const eligibility = r['Eligibility'] || '';
-    const address = r['Address'] || '';
-    const phone = r['Public Phone Number'] || '';
-    const website = r['Public Website'] || '';
-    const hours = r['Hours'] || '';
-    const walkins = r['Walk-ins?'] || '';
-    const langs = r['Languages'] || '';
-    const application = r['Application'] || '';
-    const otherInfo = r['Other Info'] || '';
-    const duplicate = r['Duplicate?'] || '';
-    const verified = r['Verified'] || '';
-
-    const accessBadgeClass = accessClass(r['Public Access?']);
-    const accessText = accessLabel(r['Public Access?']);
-    const tooltipMsg = restrictionTooltipMsg(r);
-    const badgeHTML = tooltipMsg
-      ? `<span class="access-badge ${accessBadgeClass} has-tooltip">${accessText}<span class="tooltip-box">${tooltipMsg}</span></span>`
-      : `<span class="access-badge ${accessBadgeClass}">${accessText}</span>`;
-
-    let verifiedLabel, verifiedDotClass;
-    if (verified && verified !== 'NEED VERIFICATION') {
-      verifiedDotClass = 'verified-dot';
-      verifiedLabel = `✅ Verified<br><span style="opacity:0.75">Last checked: ${verified}</span>`;
-    } else if (verified === 'NEED VERIFICATION') {
-      verifiedDotClass = 'unverified-dot';
-      verifiedLabel = `⚠️ Needs verification<br><span style="opacity:0.75">Data may be outdated</span>`;
-    } else {
-      verifiedDotClass = 'unverified-dot';
-      verifiedLabel = `⚠️ Not yet verified<br><span style="opacity:0.75">Confirm details before referring</span>`;
-    }
-    const verifiedHTML = `<span class="dot-wrap"><span class="${verifiedDotClass}"></span><span class="tooltip-box">${verifiedLabel}</span></span>`;
-
-    let detailsHTML = '';
-    if (!isNA(address)) detailsHTML += `<div class="detail-row"><span class="detail-label">📍</span><span class="detail-value">${address}</span></div>`;
-    if (!isNA(hours)) detailsHTML += `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>`;
-    if (!isNA(walkins)) detailsHTML += `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>`;
-    if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
-    if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
-
-    const pdfIdx = filtered.indexOf(r);
-    let footerHTML = '';
-    if (!isNA(website)) footerHTML += `<a class="card-link link-website" href="${website}" target="_blank">🔗 Website</a>`;
-    if (!isNA(phone)) footerHTML += `<a class="card-link link-phone" href="tel:${phone.replace(/[^0-9+]/g,'').split('A')[0]}">📞 ${phone}</a>`;
-    footerHTML += mapItButton(address);
-    footerHTML += `<button class="card-link link-pdf" onclick="generateResourcePDF(_pdfResources[${pdfIdx}])">📄 Save PDF</button>`;
-
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="card-name">${name}${verifiedHTML}</div>
-        ${badgeHTML}
-      </div>
-      ${orgLine ? `<div class="card-org">${orgLine}</div>` : ''}
-      ${desc ? `<p class="card-desc">${desc}</p>` : ''}
-      ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}</div>` : ''}
-      ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
-      ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>` : ''}
-      ${duplicate ? `<p class="duplicate-note">ℹ️ Also listed as: ${duplicate}</p>` : ''}
-      ${footerHTML ? `<div class="card-footer">${footerHTML}</div>` : ''}
-    `;
-    list.appendChild(card);
-  });
+  filtered.forEach(r => list.appendChild(buildCard(r, catColor, r)));
 }
 
 // ── BACK TO CATEGORIES ────────────────────────────────────────────────────────
@@ -1019,6 +1034,10 @@ function showCategories() {
   document.getElementById('resultsView').style.display = 'none';
   document.getElementById('categoryView').style.display = 'block';
   buildCategoryTiles();
+  // Restore hot-list section if emergency mode is still on
+  if (document.getElementById('emergencyToggle')?.checked) {
+    document.getElementById('hotListSection').style.display = 'block';
+  }
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
@@ -1055,15 +1074,27 @@ function applyEmergencyMode() {
   document.getElementById('emgLblNo').classList.toggle('lbl-active', !on);
   document.getElementById('emgLblYes').classList.toggle('lbl-active', on);
 
+  const hotSection = document.getElementById('hotListSection');
+  const hotCards = document.getElementById('hotListCards');
+
   if (on) {
-    // Show only hot-list resources across all categories
+    // Keep categories visible; render hot-list cards below them
+    document.getElementById('categoryView').style.display = 'block';
+    document.getElementById('resultsView').style.display = 'none';
+    hotCards.innerHTML = '';
     const hotResources = resources.filter(r => {
       const h = r['Hot List?'];
       return h && h !== 'null' && h.toString().toLowerCase() !== 'no' && h.toString().trim() !== '';
     });
-    renderResults('🚨 Emergency Resources', hotResources);
+    if (hotResources.length === 0) {
+      hotCards.innerHTML = '<div class="no-results"><p>No hot-list resources found.</p></div>';
+    } else {
+      hotResources.forEach(r => hotCards.appendChild(buildCard(r, '#bf360c', r)));
+    }
+    hotSection.style.display = 'block';
   } else {
-    showCategories();
+    hotSection.style.display = 'none';
+    hotCards.innerHTML = '';
   }
 }
 
@@ -1074,6 +1105,10 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.20', date: 'May 2026', notes: [
+    'Emergency mode: category grid stays visible; hot-list resources appear in a separate section below it',
+    'Emergency banner: 🚨 icons are static (no pulse), text and toggle centered and grouped closer together',
+  ]},
   { version: '0.19', date: 'May 2026', notes: [
     'Emergency banner added between search bar and category grid — toggle Yes to highlight hot-list resources and tint the page orange',
   ]},
