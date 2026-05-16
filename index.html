@@ -1076,6 +1076,9 @@ function buildCard(r, color, pdfRef) {
   }
   const verifiedHTML = `<span class="dot-wrap"><span class="${verifiedDotClass}"></span><span class="tooltip-box">${verifiedLabel}</span></span>`;
 
+  // resourceIdx must be declared first — tslot closes over it
+  const resourceIdx = resources.indexOf(r);
+
   // Translation slot helper — only renders if language active and field has content
   const tslot = (field, value) => (activeLanguage && value && !isNA(value))
     ? `<div id="${slotId(resourceIdx, field)}"></div>` : '';
@@ -1091,7 +1094,6 @@ function buildCard(r, color, pdfRef) {
   const chipHTML = activeLanguage ? `<span class="lang-chip">${activeLanguage.toUpperCase()}</span>` : '';
 
   let footerHTML = '';
-  const resourceIdx = resources.indexOf(r);
   if (!isNA(website)) footerHTML += `<a class="card-link link-website" href="${website}" target="_blank">🔗 Website</a>`;
   if (!isNA(phone)) footerHTML += `<a class="card-link link-phone" href="tel:${phone.replace(/[^0-9+]/g,'').split('A')[0]}">📞 ${phone}</a>`;
   footerHTML += mapItButton(address);
