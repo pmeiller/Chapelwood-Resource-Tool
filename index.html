@@ -179,7 +179,7 @@
     padding: 4px 0 2px 10px;
     font-style: italic;
     color: #4b3f2f;
-    font-size: 0.95em;
+    font-size: inherit;
     line-height: 1.45;
   }
   .translation-loading {
@@ -1104,9 +1104,10 @@ function buildCard(r, color, pdfRef) {
       <div class="card-name">${name}${verifiedHTML}${chipHTML}</div>
       ${badgeHTML}
     </div>
+    ${tslot('Resource Name', r['Resource Name'])}
     ${orgLine ? `<div class="card-org">${orgLine}</div>` : ''}
     ${desc ? `<p class="card-desc">${desc}</p>${tslot('Resource Description', desc)}` : ''}
-    ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}</div>${tslot('Eligibility', eligibility)}` : ''}
+    ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}${tslot('Eligibility', eligibility)}</div>` : ''}
     ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
     ${hoursHTML}
     ${walkinsHTML}
@@ -1193,7 +1194,7 @@ function applyEmergencyMode() {
 }
 
 // ── TRANSLATION ENGINE ───────────────────────────────────────────────────────
-const TRANSLATABLE_FIELDS = ['Resource Description', 'Eligibility', 'Hours', 'Walk-ins?', 'Other Info'];
+const TRANSLATABLE_FIELDS = ['Resource Name', 'Resource Description', 'Eligibility', 'Hours', 'Walk-ins?', 'Other Info'];
 const LANGUAGES = { es: 'Español', ko: '한국어' };
 const translationCache = {};   // translationCache[langCode][ridx][field] = text
 let activeLanguage = null;
@@ -1443,6 +1444,25 @@ function loadScript(src) {
   });
 }
 
+async function fetchMapImage(address) {
+  if (!address || isNA(address)) return null;
+  const cleanAddr = address.split(' AND ALSO')[0].trim();
+  if (/online|n\/a/i.test(cleanAddr)) return null;
+  try {
+    const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanAddr)}&format=json&limit=1`;
+    const geoData = await (await fetch(geoUrl)).json();
+    if (!geoData?.length) return null;
+    const { lat, lon } = geoData[0];
+    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=15&size=200x150&markers=${lat},${lon},red-pushpin`;
+    const blob = await (await fetch(mapUrl)).blob();
+    return await new Promise(res => {
+      const fr = new FileReader();
+      fr.onloadend = () => res(fr.result);
+      fr.readAsDataURL(blob);
+    });
+  } catch (e) { return null; }
+}
+
 async function generateResourcePDF(r) {
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
@@ -1567,22 +1587,20 @@ async function generateResourcePDF(r) {
     _tx = _cache;
   }
 
-  // Helper: add a field with optional translation below
+  // Helper: render field then translation below it with amber left rule (no label)
   function addFieldBilingual(label, field, renderFn) {
     const value = r[field];
     if (!value || isNA(value)) return;
     renderFn(label, value);
     if (activeLanguage && _tx[field]) {
-      const langLabel = `— ${LANGUAGES[activeLanguage]}:`;
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8.5);
-      doc.setTextColor(130, 100, 20);
-      doc.text(langLabel, mx + 4, y);
-      y += 4;
+      const txLines = doc.splitTextToSize(_tx[field], pageW - mx * 2 - 6);
+      const txTop = y - 1;
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(0.9);
+      doc.line(mx, txTop, mx, txTop + txLines.length * 4.5 + 1);
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(9);
       doc.setTextColor(75, 63, 47);
-      const txLines = doc.splitTextToSize(_tx[field], pageW - mx * 2 - 8);
       doc.text(txLines, mx + 4, y);
       y += txLines.length * 4.5 + 4;
     }
@@ -1591,38 +1609,43 @@ async function generateResourcePDF(r) {
   // Description (translatable)
   addFieldBilingual('Description', 'Resource Description', (lbl, val) => addField(lbl, val));
 
-  // Eligibility with yellow background (translatable)
+  // Eligibility — yellow box, translation inside the same box
   if (r['Eligibility'] && !isNA(r['Eligibility'])) {
+    const eligLines = doc.splitTextToSize(r['Eligibility'], pageW - mx * 2 - 4);
+    const txEligLines = (activeLanguage && _tx['Eligibility'])
+      ? doc.splitTextToSize(_tx['Eligibility'], pageW - mx * 2 - 10)
+      : null;
+    const boxH = eligLines.length * 4.5 + (txEligLines ? txEligLines.length * 4.5 + 8 : 0) + 6;
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(130, 100, 20);
     doc.text('ELIGIBILITY', mx, y);
     y += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9.5);
-    doc.setTextColor(40, 40, 40);
-    const lines = doc.splitTextToSize(r['Eligibility'], pageW - mx * 2 - 4);
-    const boxH = lines.length * 4.5 + 6;
+
     doc.setFillColor(255, 248, 210);
     doc.setDrawColor(240, 200, 80);
     doc.setLineWidth(0.3);
     doc.roundedRect(mx - 2, y - 3, pageW - mx * 2 + 4, boxH, 2, 2, 'FD');
-    doc.text(lines, mx + 1, y);
-    y += boxH + 4;
-    // Translation below eligibility box
-    if (activeLanguage && _tx['Eligibility']) {
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    doc.text(eligLines, mx + 1, y);
+    y += eligLines.length * 4.5 + 4;
+
+    if (txEligLines) {
+      const txTop = y - 1;
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(0.9);
+      doc.line(mx + 2, txTop, mx + 2, txTop + txEligLines.length * 4.5 + 1);
       doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8.5);
-      doc.setTextColor(130, 100, 20);
-      doc.text(`— ${LANGUAGES[activeLanguage]}:`, mx + 4, y);
-      y += 4;
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
+      doc.setFontSize(9.5);
       doc.setTextColor(75, 63, 47);
-      const txLines = doc.splitTextToSize(_tx['Eligibility'], pageW - mx * 2 - 8);
-      doc.text(txLines, mx + 4, y);
-      y += txLines.length * 4.5 + 4;
+      doc.text(txEligLines, mx + 6, y);
+      y += txEligLines.length * 4.5 + 4;
     }
+    y += 2;
   }
 
   addDetail('Address', r['Address']);
@@ -1639,6 +1662,10 @@ async function generateResourcePDF(r) {
   y += 5;
 
   addDetail('Phone', r['Public Phone Number']);
+
+  // Fetch map image (fire in parallel with other work — already awaited above)
+  const mapImgData = await fetchMapImage(r['Address']);
+
   if (hasWebsite) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
@@ -1649,8 +1676,12 @@ async function generateResourcePDF(r) {
     doc.setTextColor(21, 101, 192);
     doc.textWithLink(website, mx + 30, y, { url: website });
     y += 10;
+  }
 
-    // QR code inline, directly after website
+  // QR code + map side by side
+  const imgSize = 45;
+  let qrPngUrl = null;
+  if (hasWebsite) {
     try {
       const qr = qrcode(0, 'M');
       qr.addData(website);
@@ -1662,17 +1693,34 @@ async function generateResourcePDF(r) {
       const c = document.createElement('canvas');
       c.width = img.width; c.height = img.height;
       c.getContext('2d').drawImage(img, 0, 0);
-      const pngUrl = c.toDataURL('image/png');
-      const qrSize = 48;
-      const qrX = (pageW - qrSize) / 2;
-      doc.addImage(pngUrl, 'PNG', qrX, y, qrSize, qrSize);
-      y += qrSize + 4;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(140, 140, 140);
-      doc.text('Scan to visit website', pageW / 2, y, { align: 'center' });
-      y += 8;
+      qrPngUrl = c.toDataURL('image/png');
     } catch (e) { console.error('QR failed:', e); }
+  }
+
+  if (qrPngUrl || mapImgData) {
+    const startY = y;
+    if (mapImgData && qrPngUrl) {
+      // Both: map left, QR right
+      doc.addImage(mapImgData, 'PNG', mx, startY, imgSize, imgSize);
+      doc.addImage(qrPngUrl, 'PNG', pageW - mx - imgSize, startY, imgSize, imgSize);
+    } else if (mapImgData) {
+      doc.addImage(mapImgData, 'PNG', (pageW - imgSize) / 2, startY, imgSize, imgSize);
+    } else if (qrPngUrl) {
+      doc.addImage(qrPngUrl, 'PNG', (pageW - imgSize) / 2, startY, imgSize, imgSize);
+    }
+    y += imgSize + 3;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(140, 140, 140);
+    if (mapImgData && qrPngUrl) {
+      doc.text('Location map', mx + imgSize / 2, y, { align: 'center' });
+      doc.text('Scan to visit website', pageW - mx - imgSize / 2, y, { align: 'center' });
+    } else if (mapImgData) {
+      doc.text('Location map', pageW / 2, y, { align: 'center' });
+    } else {
+      doc.text('Scan to visit website', pageW / 2, y, { align: 'center' });
+    }
+    y += 8;
   }
 
   // Footer
