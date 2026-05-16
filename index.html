@@ -115,6 +115,106 @@
   }
   .admin-btn:hover { background: rgba(255,255,255,0.22); }
 
+  /* ── LANGUAGE SELECTOR ──────────────────────────────── */
+  .lang-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .lang-btn {
+    flex-shrink: 0;
+    padding: 7px 13px;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 7px;
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .lang-btn:hover { background: rgba(255,255,255,0.22); }
+  .lang-btn.lang-active { background: #f59e0b; border-color: #f59e0b; color: #1a1a1a; }
+  .lang-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+    min-width: 150px;
+    z-index: 200;
+    overflow: hidden;
+  }
+  .lang-dropdown.open { display: block; }
+  .lang-option {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--dark);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .lang-option:hover { background: var(--light-gray); }
+  .lang-option.selected { font-weight: 700; color: #b45309; }
+  .lang-option-clear {
+    border-top: 1px solid var(--border);
+    color: #888;
+    font-size: 0.8rem;
+  }
+
+  /* ── TRANSLATION BLOCKS ─────────────────────────────── */
+  .translation-block {
+    border-left: 3px solid #f59e0b;
+    margin-top: 6px;
+    padding: 4px 0 2px 10px;
+    font-style: italic;
+    color: #4b3f2f;
+    font-size: 0.95em;
+    line-height: 1.45;
+  }
+  .translation-loading {
+    color: #f59e0b;
+    font-style: italic;
+    font-size: 0.82em;
+  }
+  .lang-chip {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-style: normal;
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #f59e0b;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── TRANSLATION CAP WARNING ─────────────────────────── */
+  #translationCapBanner {
+    display: none;
+    background: #fff3cd;
+    border-bottom: 1px solid #f59e0b;
+    color: #7c4a00;
+    padding: 9px 20px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    text-align: center;
+  }
+  #translationCapBanner.visible { display: block; }
+
   /* ── SEARCH BAR ─────────────────────────────────── */
   .search-bar {
     background: var(--white);
@@ -685,9 +785,21 @@
   <img class="header-leaves"
     src="https://chapelwood.org/wp-content/uploads/2025/03/LeavesWhite_Icon-1024x603.png"
     alt="">
+  <div class="lang-wrap" id="langWrap">
+    <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()">＋ Language</button>
+    <div class="lang-dropdown" id="langDropdown">
+      <button class="lang-option" data-lang="es" onclick="setLanguage('es')">🇲🇽 Español</button>
+      <button class="lang-option" data-lang="ko" onclick="setLanguage('ko')">🇰🇷 한국어</button>
+      <button class="lang-option lang-option-clear" onclick="clearLanguage()">✕ English only</button>
+    </div>
+  </div>
   <a href="https://referral.unitedwayhouston.org/" target="_blank" rel="noopener" class="admin-btn">211 Website</a>
   <a href="https://pmeiller.github.io/Chapelwood-Resource-Tool/admin-tool.html" class="admin-btn">Admin</a>
 </header>
+
+<div id="translationCapBanner">
+  ⚠️ Daily translation limit reached — showing English only. Translations will resume tomorrow.
+</div>
 
 <div class="search-bar">
   <div class="search-inner">
@@ -757,7 +869,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.23';
+const VERSION = '0.24-dev';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -964,12 +1076,19 @@ function buildCard(r, color, pdfRef) {
   }
   const verifiedHTML = `<span class="dot-wrap"><span class="${verifiedDotClass}"></span><span class="tooltip-box">${verifiedLabel}</span></span>`;
 
+  // Translation slot helper — only renders if language active and field has content
+  const tslot = (field, value) => (activeLanguage && value && !isNA(value))
+    ? `<div id="${slotId(resourceIdx, field)}"></div>` : '';
+
   let detailsHTML = '';
   if (!isNA(address)) detailsHTML += `<div class="detail-row"><span class="detail-label">📍</span><span class="detail-value">${address}</span></div>`;
-  if (!isNA(hours)) detailsHTML += `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>`;
-  if (!isNA(walkins)) detailsHTML += `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>`;
   if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
   if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
+  // Translatable detail rows rendered separately so slots can follow them
+  const hoursHTML = !isNA(hours) ? `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>${tslot('Hours', hours)}` : '';
+  const walkinsHTML = !isNA(walkins) ? `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>${tslot('Walk-ins?', walkins)}` : '';
+
+  const chipHTML = activeLanguage ? `<span class="lang-chip">${activeLanguage.toUpperCase()}</span>` : '';
 
   let footerHTML = '';
   const resourceIdx = resources.indexOf(r);
@@ -980,14 +1099,16 @@ function buildCard(r, color, pdfRef) {
 
   card.innerHTML = `
     <div class="card-top">
-      <div class="card-name">${name}${verifiedHTML}</div>
+      <div class="card-name">${name}${verifiedHTML}${chipHTML}</div>
       ${badgeHTML}
     </div>
     ${orgLine ? `<div class="card-org">${orgLine}</div>` : ''}
-    ${desc ? `<p class="card-desc">${desc}</p>` : ''}
-    ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}</div>` : ''}
+    ${desc ? `<p class="card-desc">${desc}</p>${tslot('Resource Description', desc)}` : ''}
+    ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}</div>${tslot('Eligibility', eligibility)}` : ''}
     ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
-    ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>` : ''}
+    ${hoursHTML}
+    ${walkinsHTML}
+    ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>${tslot('Other Info', otherInfo)}` : ''}
     ${duplicate ? `<p class="duplicate-note">ℹ️ Also listed as: ${duplicate}</p>` : ''}
     ${footerHTML ? `<div class="card-footer">${footerHTML}</div>` : ''}
   `;
@@ -1015,6 +1136,9 @@ function renderResults(title, resources) {
 
   const catColor = currentCategory ? currentCategory.color : '#333';
   filtered.forEach(r => list.appendChild(buildCard(r, catColor, r)));
+
+  // Trigger translation for all visible cards if a language is active
+  if (activeLanguage) translateAllCards(filtered, activeLanguage);
 }
 
 // ── BACK TO CATEGORIES ────────────────────────────────────────────────────────
@@ -1066,13 +1190,160 @@ function applyEmergencyMode() {
   else showCategories();
 }
 
+// ── TRANSLATION ENGINE ───────────────────────────────────────────────────────
+const TRANSLATABLE_FIELDS = ['Resource Description', 'Eligibility', 'Hours', 'Walk-ins?', 'Other Info'];
+const LANGUAGES = { es: 'Español', ko: '한국어' };
+const translationCache = {};   // translationCache[langCode][ridx][field] = text
+let activeLanguage = null;
+let translationCapReached = false;
+
+function slotId(ridx, field) {
+  return `tslot-${ridx}-${field.replace(/[^a-zA-Z0-9]/g, '_')}`;
+}
+
+async function translateField(text, langCode) {
+  if (!text || !text.trim()) return null;
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    // Rate / daily cap detection
+    if (data.responseStatus === 429 ||
+        (data.responseDetails && data.responseDetails.toLowerCase().includes('limit'))) {
+      showTranslationCap();
+      return null;
+    }
+    if (data.responseStatus !== 200 && data.responseStatus !== 206) return null;
+    const translated = data.responseData?.translatedText;
+    // MyMemory sometimes echoes back the source on failure
+    if (!translated || translated.trim().toLowerCase() === text.trim().toLowerCase()) return null;
+    return translated;
+  } catch (e) {
+    return null;
+  }
+}
+
+function showTranslationCap() {
+  if (translationCapReached) return;
+  translationCapReached = true;
+  document.getElementById('translationCapBanner').classList.add('visible');
+}
+
+async function translateCard(r, ridx, langCode) {
+  if (!langCode) return;
+  if (!translationCache[langCode]) translationCache[langCode] = {};
+  if (!translationCache[langCode][ridx]) translationCache[langCode][ridx] = {};
+  const cache = translationCache[langCode][ridx];
+
+  // Set loading state for fields not yet cached
+  TRANSLATABLE_FIELDS.forEach(field => {
+    if (cache[field] !== undefined) return;   // already cached
+    const slot = document.getElementById(slotId(ridx, field));
+    if (slot && r[field] && !isNA(r[field])) {
+      slot.innerHTML = `<span class="translation-loading">Translating…</span>`;
+    }
+  });
+
+  // Fetch all uncached fields in parallel
+  const needed = TRANSLATABLE_FIELDS.filter(f => cache[f] === undefined && r[f] && !isNA(r[f]));
+  await Promise.all(needed.map(async field => {
+    const result = await translateField(r[field], langCode);
+    cache[field] = result;   // null = failed/empty, still cached so we don't retry
+  }));
+
+  // Write results into DOM slots
+  TRANSLATABLE_FIELDS.forEach(field => {
+    const slot = document.getElementById(slotId(ridx, field));
+    if (!slot) return;
+    const text = cache[field];
+    if (text) {
+      slot.innerHTML = `<div class="translation-block">${text}</div>`;
+    } else {
+      slot.innerHTML = '';   // silent fallback to English
+    }
+  });
+}
+
+async function translateAllCards(cardResources, langCode) {
+  if (!langCode || translationCapReached) return;
+  // Fire translations concurrently, one per card
+  await Promise.all(cardResources.map(r => {
+    const ridx = resources.indexOf(r);
+    return translateCard(r, ridx, langCode);
+  }));
+}
+
+// ── LANGUAGE SELECTOR ─────────────────────────────────────────────────────────
+function toggleLangDropdown() {
+  document.getElementById('langDropdown').classList.toggle('open');
+}
+
+function setLanguage(langCode) {
+  activeLanguage = langCode;
+  localStorage.setItem('cwLanguage', langCode);
+  translationCapReached = false;
+  document.getElementById('translationCapBanner').classList.remove('visible');
+  // Clear cache when language changes
+  Object.keys(translationCache).forEach(k => delete translationCache[k]);
+  updateLangBtn();
+  closeLangDropdown();
+  // Re-render current view with new language
+  if (currentCategory) showCategory(currentCategory);
+}
+
+function clearLanguage() {
+  activeLanguage = null;
+  localStorage.removeItem('cwLanguage');
+  Object.keys(translationCache).forEach(k => delete translationCache[k]);
+  updateLangBtn();
+  closeLangDropdown();
+  if (currentCategory) showCategory(currentCategory);
+}
+
+function closeLangDropdown() {
+  document.getElementById('langDropdown').classList.remove('open');
+}
+
+function updateLangBtn() {
+  const btn = document.getElementById('langBtn');
+  const dropdown = document.getElementById('langDropdown');
+  if (activeLanguage) {
+    btn.textContent = `🌐 ${LANGUAGES[activeLanguage]}`;
+    btn.classList.add('lang-active');
+  } else {
+    btn.textContent = '＋ Language';
+    btn.classList.remove('lang-active');
+  }
+  // Mark selected option
+  dropdown.querySelectorAll('.lang-option[data-lang]').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.lang === activeLanguage);
+  });
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+  if (!document.getElementById('langWrap').contains(e.target)) closeLangDropdown();
+});
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.getElementById('footerVersion').textContent = VERSION;
 buildCategoryTiles();
 fetchResourcesData();
+// Restore saved language preference
+const _savedLang = localStorage.getItem('cwLanguage');
+if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLangBtn(); }
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24', date: 'May 2026', notes: [
+    'Secondary language support — Español and 한국어 via MyMemory API',
+    'Language selector in header (left of 211 button); preference saved across visits',
+    'Translated text appears below English with amber left border and italic style',
+    'Translation triggered when a category is opened; served from cache on repeat views',
+    'Language chip (ES / KO) shown on each card when translation is active',
+    'PDF includes bilingual text below each translatable field when a language is active',
+    'Daily cap warning banner shown if MyMemory rate limit is reached',
+  ]},
   { version: '0.23', date: 'May 2026', notes: [
     'Fixed broken PDF button — was passing full JSON inline in onclick attribute (broke on quotes); now uses safe index reference',
     'Renamed "Save PDF" to "Generate PDF"',
@@ -1278,9 +1549,47 @@ async function generateResourcePDF(r) {
     y += Math.max(lines.length * 4.5, 5) + 2;
   }
 
-  addField('Description', r['Resource Description']);
+  // Fetch any missing translations for PDF if language is active
+  const _ridx = resources.indexOf(r);
+  let _tx = {};
+  if (activeLanguage) {
+    if (!translationCache[activeLanguage]) translationCache[activeLanguage] = {};
+    if (!translationCache[activeLanguage][_ridx]) translationCache[activeLanguage][_ridx] = {};
+    const _cache = translationCache[activeLanguage][_ridx];
+    const _needed = TRANSLATABLE_FIELDS.filter(f => _cache[f] === undefined && r[f] && !isNA(r[f]));
+    if (_needed.length) {
+      await Promise.all(_needed.map(async f => {
+        _cache[f] = await translateField(r[f], activeLanguage);
+      }));
+    }
+    _tx = _cache;
+  }
 
-  // Eligibility with yellow background
+  // Helper: add a field with optional translation below
+  function addFieldBilingual(label, field, renderFn) {
+    const value = r[field];
+    if (!value || isNA(value)) return;
+    renderFn(label, value);
+    if (activeLanguage && _tx[field]) {
+      const langLabel = `— ${LANGUAGES[activeLanguage]}:`;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(130, 100, 20);
+      doc.text(langLabel, mx + 4, y);
+      y += 4;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(75, 63, 47);
+      const txLines = doc.splitTextToSize(_tx[field], pageW - mx * 2 - 8);
+      doc.text(txLines, mx + 4, y);
+      y += txLines.length * 4.5 + 4;
+    }
+  }
+
+  // Description (translatable)
+  addFieldBilingual('Description', 'Resource Description', (lbl, val) => addField(lbl, val));
+
+  // Eligibility with yellow background (translatable)
   if (r['Eligibility'] && !isNA(r['Eligibility'])) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
@@ -1298,14 +1607,28 @@ async function generateResourcePDF(r) {
     doc.roundedRect(mx - 2, y - 3, pageW - mx * 2 + 4, boxH, 2, 2, 'FD');
     doc.text(lines, mx + 1, y);
     y += boxH + 4;
+    // Translation below eligibility box
+    if (activeLanguage && _tx['Eligibility']) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(130, 100, 20);
+      doc.text(`— ${LANGUAGES[activeLanguage]}:`, mx + 4, y);
+      y += 4;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(75, 63, 47);
+      const txLines = doc.splitTextToSize(_tx['Eligibility'], pageW - mx * 2 - 8);
+      doc.text(txLines, mx + 4, y);
+      y += txLines.length * 4.5 + 4;
+    }
   }
 
   addDetail('Address', r['Address']);
-  addDetail('Hours', r['Hours']);
-  addDetail('Walk-ins', r['Walk-ins?']);
+  addFieldBilingual('Hours', 'Hours', (lbl, val) => addDetail(lbl, val));
+  addFieldBilingual('Walk-ins', 'Walk-ins?', (lbl, val) => addDetail(lbl, val));
   addDetail('Languages', r['Languages']);
   addDetail('How to Apply', r['Application']);
-  addDetail('Notes', r['Other Info']);
+  addFieldBilingual('Notes', 'Other Info', (lbl, val) => addDetail(lbl, val));
 
   y += 2;
   doc.setDrawColor(220, 220, 220);
