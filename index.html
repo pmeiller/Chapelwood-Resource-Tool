@@ -869,7 +869,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev01';
+const VERSION = '0.24-dev02';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1079,17 +1079,17 @@ function buildCard(r, color, pdfRef) {
   // resourceIdx must be declared first — tslot closes over it
   const resourceIdx = resources.indexOf(r);
 
-  // Translation slot helper — only renders if language active and field has content
-  const tslot = (field, value) => (activeLanguage && value && !isNA(value))
-    ? `<div id="${slotId(resourceIdx, field)}"></div>` : '';
+  // Translation slot helper — fs sets explicit font-size so translation matches its English field
+  const tslot = (field, value, fs) => (activeLanguage && value && !isNA(value))
+    ? `<div id="${slotId(resourceIdx, field)}"${fs ? ` style="font-size:${fs}"` : ''}></div>` : '';
 
   let detailsHTML = '';
   if (!isNA(address)) detailsHTML += `<div class="detail-row"><span class="detail-label">📍</span><span class="detail-value">${address}</span></div>`;
   if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
   if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
   // Translatable detail rows rendered separately so slots can follow them
-  const hoursHTML = !isNA(hours) ? `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>${tslot('Hours', hours)}` : '';
-  const walkinsHTML = !isNA(walkins) ? `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>${tslot('Walk-ins?', walkins)}` : '';
+  const hoursHTML = !isNA(hours) ? `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>${tslot('Hours', hours, '0.8rem')}` : '';
+  const walkinsHTML = !isNA(walkins) ? `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>${tslot('Walk-ins?', walkins, '0.8rem')}` : '';
 
   const chipHTML = activeLanguage ? `<span class="lang-chip">${activeLanguage.toUpperCase()}</span>` : '';
 
@@ -1104,14 +1104,14 @@ function buildCard(r, color, pdfRef) {
       <div class="card-name">${name}${verifiedHTML}${chipHTML}</div>
       ${badgeHTML}
     </div>
-    ${tslot('Resource Name', r['Resource Name'])}
+    ${tslot('Resource Name', r['Resource Name'], '1.15rem')}
     ${orgLine ? `<div class="card-org">${orgLine}</div>` : ''}
-    ${desc ? `<p class="card-desc">${desc}</p>${tslot('Resource Description', desc)}` : ''}
+    ${desc ? `<p class="card-desc">${desc}</p>${tslot('Resource Description', desc, '0.88rem')}` : ''}
     ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}${tslot('Eligibility', eligibility)}</div>` : ''}
     ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
     ${hoursHTML}
     ${walkinsHTML}
-    ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>${tslot('Other Info', otherInfo)}` : ''}
+    ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>${tslot('Other Info', otherInfo, '0.8rem')}` : ''}
     ${duplicate ? `<p class="duplicate-note">ℹ️ Also listed as: ${duplicate}</p>` : ''}
     ${footerHTML ? `<div class="card-footer">${footerHTML}</div>` : ''}
   `;
@@ -1447,19 +1447,64 @@ function loadScript(src) {
 async function fetchMapImage(address) {
   if (!address || isNA(address)) return null;
   const cleanAddr = address.split(' AND ALSO')[0].trim();
-  if (/online|n\/a/i.test(cleanAddr)) return null;
+  if (/^(online|n\/a|virtual)/i.test(cleanAddr)) return null;
   try {
-    const geoUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanAddr)}&format=json&limit=1`;
-    const geoData = await (await fetch(geoUrl)).json();
+    // Geocode with Nominatim
+    const geoData = await (await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanAddr)}&format=json&limit=1`
+    )).json();
     if (!geoData?.length) return null;
-    const { lat, lon } = geoData[0];
-    const mapUrl = `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=15&size=200x150&markers=${lat},${lon},red-pushpin`;
-    const blob = await (await fetch(mapUrl)).blob();
-    return await new Promise(res => {
-      const fr = new FileReader();
-      fr.onloadend = () => res(fr.result);
-      fr.readAsDataURL(blob);
-    });
+    const lat = parseFloat(geoData[0].lat);
+    const lon = parseFloat(geoData[0].lon);
+
+    // Tile math at zoom 15 (OSM tiles have Access-Control-Allow-Origin: *)
+    const zoom = 15;
+    const n = Math.pow(2, zoom);
+    const tx = Math.floor((lon + 180) / 360 * n);
+    const latRad = lat * Math.PI / 180;
+    const ty = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n);
+
+    // Exact pixel of lat/lon within the 3×3 tile grid
+    const pxLon = ((lon + 180) / 360 * n - (tx - 1)) * 256;
+    const pxLat = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n - (ty - 1)) * 256;
+
+    // Draw 3×3 tile grid (768×768 px)
+    const T = 256, G = 3;
+    const canvas = document.createElement('canvas');
+    canvas.width = T * G; canvas.height = T * G;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#f2efe9';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    await Promise.all(
+      Array.from({ length: G * G }, (_, i) => {
+        const dx = (i % G) - 1, dy = Math.floor(i / G) - 1;
+        return new Promise(res => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => { ctx.drawImage(img, (dx + 1) * T, (dy + 1) * T, T, T); res(); };
+          img.onerror = res;
+          img.src = `https://tile.openstreetmap.org/${zoom}/${tx + dx}/${ty + dy}.png`;
+        });
+      })
+    );
+
+    // Red circle marker
+    ctx.beginPath();
+    ctx.arc(pxLon, pxLat, 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(220,50,50,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Crop to centered 512×512
+    const out = document.createElement('canvas');
+    out.width = 512; out.height = 512;
+    out.getContext('2d').drawImage(canvas,
+      (canvas.width - 512) / 2, (canvas.height - 512) / 2, 512, 512,
+      0, 0, 512, 512);
+    return out.toDataURL('image/png');
   } catch (e) { return null; }
 }
 
