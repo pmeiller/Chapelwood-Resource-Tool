@@ -570,31 +570,16 @@
   }
   .card-link:hover { opacity: 0.8; }
 
-  .link-website {
-    background: var(--dark);
-    color: var(--white);
-  }
-
-  .link-phone {
+  .link-website, .link-phone, .link-map, .link-pdf {
     background: var(--light-gray);
     color: var(--dark);
     border: 1px solid var(--border);
   }
-
-  .link-map {
-    background: #e8f4fd;
-    color: #0d47a1;
-    border: 1px solid #90caf9;
-  }
   .link-pdf {
-    background: #f3e5f5;
-    color: #6a1b9a;
-    border: 1px solid #ce93d8;
     cursor: pointer;
     font-family: inherit;
     font-size: inherit;
   }
-  .link-pdf:hover { opacity: 0.8; }
 
   .duplicate-note {
     font-size: 0.75rem;
@@ -772,7 +757,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.22';
+const VERSION = '0.23';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -987,10 +972,11 @@ function buildCard(r, color, pdfRef) {
   if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
 
   let footerHTML = '';
+  const resourceIdx = resources.indexOf(r);
   if (!isNA(website)) footerHTML += `<a class="card-link link-website" href="${website}" target="_blank">🔗 Website</a>`;
   if (!isNA(phone)) footerHTML += `<a class="card-link link-phone" href="tel:${phone.replace(/[^0-9+]/g,'').split('A')[0]}">📞 ${phone}</a>`;
   footerHTML += mapItButton(address);
-  footerHTML += `<button class="card-link link-pdf" onclick="generateResourcePDF(${JSON.stringify(pdfRef).replace(/</g,'\\u003c')})">📄 Save PDF</button>`;
+  footerHTML += `<button class="card-link link-pdf" data-ridx="${resourceIdx}" onclick="generateResourcePDF(resources[this.dataset.ridx])">📄 Generate PDF</button>`;
 
   card.innerHTML = `
     <div class="card-top">
@@ -1087,6 +1073,11 @@ fetchResourcesData();
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.23', date: 'May 2026', notes: [
+    'Fixed broken PDF button — was passing full JSON inline in onclick attribute (broke on quotes); now uses safe index reference',
+    'Renamed "Save PDF" to "Generate PDF"',
+    'Unified card action button style — Website, Phone, Map It, and Generate PDF all share one consistent look',
+  ]},
   { version: '0.22', date: 'May 2026', notes: [
     'Emergency mode: category tiles update to show hot-list resource counts; categories with zero hot-list resources are grayed out and non-clickable',
   ]},
