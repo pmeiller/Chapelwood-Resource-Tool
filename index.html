@@ -870,7 +870,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev04';
+const VERSION = '0.24-dev05';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1210,7 +1210,7 @@ function slotId(ridx, field) {
 async function translateField(text, langCode) {
   if (!text || !text.trim()) return null;
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}`;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${langCode}&de=pmeiller@chapelwood.org`;
     const resp = await fetch(url);
     const data = await resp.json();
     // Rate / daily cap detection
@@ -1341,6 +1341,9 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev05', date: 'May 2026', notes: [
+    'Translation API: added registered email to requests, raising daily limit from ~500 to ~50,000 words',
+  ]},
   { version: '0.24-dev04', date: 'May 2026', notes: [
     'Category tiles now have a colored left border matching their category color (mirrors the card style)',
   ]},
