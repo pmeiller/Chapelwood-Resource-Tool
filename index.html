@@ -175,7 +175,8 @@
   /* ── TRANSLATION BLOCKS ─────────────────────────────── */
   .translation-block {
     border-left: 3px solid #f59e0b;
-    margin-top: 6px;
+    margin-top: 3px;
+    margin-bottom: 10px;
     padding: 4px 0 2px 10px;
     font-style: italic;
     color: #4b3f2f;
@@ -678,7 +679,6 @@
   .link-pdf {
     cursor: pointer;
     font-family: inherit;
-    font-size: inherit;
   }
 
   .duplicate-note {
@@ -699,7 +699,7 @@
     color: #78350f;
   }
 
-  .eligibility-box strong { display: block; margin-bottom: 2px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .eligibility-box strong { display: block; margin-bottom: 2px; font-size: 0.75rem; letter-spacing: 0.04em; }
 
   .no-results {
     text-align: center;
@@ -869,7 +869,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev02';
+const VERSION = '0.24-dev03';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1086,9 +1086,9 @@ function buildCard(r, color, pdfRef) {
   let detailsHTML = '';
   if (!isNA(address)) detailsHTML += `<div class="detail-row"><span class="detail-label">📍</span><span class="detail-value">${address}</span></div>`;
   if (!isNA(langs)) detailsHTML += `<div class="detail-row"><span class="detail-label">🌐</span><span class="detail-value">${langs}</span></div>`;
-  if (!isNA(application)) detailsHTML += `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>`;
   // Translatable detail rows rendered separately so slots can follow them
-  const hoursHTML = !isNA(hours) ? `<div class="detail-row"><span class="detail-label">🕐</span><span class="detail-value">${hours}</span></div>${tslot('Hours', hours, '0.8rem')}` : '';
+  const applyHTML = !isNA(application) ? `<div class="detail-row"><span class="detail-label">Apply:</span><span class="detail-value">${application.startsWith('http') ? `<a href="${application}" target="_blank" style="color:var(--dark)">See website</a>` : application}</span></div>` : '';
+  const hoursHTML = !isNA(hours) ? `<div class="detail-row"><span class="detail-label">Hours:</span><span class="detail-value">${hours}</span></div>${tslot('Hours', hours, '0.8rem')}` : '';
   const walkinsHTML = !isNA(walkins) ? `<div class="detail-row"><span class="detail-label">Walk-ins:</span><span class="detail-value">${walkins}</span></div>${tslot('Walk-ins?', walkins, '0.8rem')}` : '';
 
   const chipHTML = activeLanguage ? `<span class="lang-chip">${activeLanguage.toUpperCase()}</span>` : '';
@@ -1109,6 +1109,7 @@ function buildCard(r, color, pdfRef) {
     ${desc ? `<p class="card-desc">${desc}</p>${tslot('Resource Description', desc, '0.88rem')}` : ''}
     ${eligibility ? `<div class="eligibility-box"><strong>Eligibility</strong>${eligibility}${tslot('Eligibility', eligibility)}</div>` : ''}
     ${detailsHTML ? `<div class="card-details">${detailsHTML}</div>` : ''}
+    ${applyHTML}
     ${hoursHTML}
     ${walkinsHTML}
     ${otherInfo ? `<div class="detail-row" style="margin-bottom:8px;font-size:0.8rem"><span class="detail-label">ℹ️ Note:</span><span class="detail-value" style="color:#555">${otherInfo}</span></div>${tslot('Other Info', otherInfo, '0.8rem')}` : ''}
@@ -1338,6 +1339,17 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev03', date: 'May 2026', notes: [
+    'Formatting pass: card layout and PDF for clarity and readability',
+    'Fixed Generate PDF button size (was inheriting browser default instead of matching other buttons)',
+    'Hours field now shows "Hours:" bold label, consistent with Walk-ins',
+    '"Apply:" moved to its own row (no longer crammed into address/languages line)',
+    '"Eligibility" label softened from all-caps to title case',
+    'Translation blocks now hug their English source (less gap above, more gap below) for clearer pairing',
+    'PDF: removed redundant "DESCRIPTION" label — text flows naturally after title',
+    'PDF: eligibility box padding tightened',
+    'PDF: map and QR code centered as a balanced pair instead of spread to opposite edges',
+  ]},
   { version: '0.24', date: 'May 2026', notes: [
     'Secondary language support — Español and 한국어 via MyMemory API',
     'Language selector in header (left of 211 button); preference saved across visits',
@@ -1651,8 +1663,28 @@ async function generateResourcePDF(r) {
     }
   }
 
-  // Description (translatable)
-  addFieldBilingual('Description', 'Resource Description', (lbl, val) => addField(lbl, val));
+  // Description — no label, flows naturally after title/org
+  if (r['Resource Description'] && !isNA(r['Resource Description'])) {
+    const descVal = r['Resource Description'];
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    const descLines = doc.splitTextToSize(descVal, pageW - mx * 2);
+    doc.text(descLines, mx, y);
+    y += descLines.length * 4.5 + 5;
+    if (activeLanguage && _tx['Resource Description']) {
+      const txLines = doc.splitTextToSize(_tx['Resource Description'], pageW - mx * 2 - 6);
+      const txTop = y - 1;
+      doc.setDrawColor(245, 158, 11);
+      doc.setLineWidth(0.9);
+      doc.line(mx, txTop, mx, txTop + txLines.length * 4.5 + 1);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(9);
+      doc.setTextColor(75, 63, 47);
+      doc.text(txLines, mx + 4, y);
+      y += txLines.length * 4.5 + 6;
+    }
+  }
 
   // Eligibility — yellow box, translation inside the same box
   if (r['Eligibility'] && !isNA(r['Eligibility'])) {
@@ -1660,7 +1692,7 @@ async function generateResourcePDF(r) {
     const txEligLines = (activeLanguage && _tx['Eligibility'])
       ? doc.splitTextToSize(_tx['Eligibility'], pageW - mx * 2 - 10)
       : null;
-    const boxH = eligLines.length * 4.5 + (txEligLines ? txEligLines.length * 4.5 + 8 : 0) + 6;
+    const boxH = eligLines.length * 4.5 + (txEligLines ? txEligLines.length * 4.5 + 6 : 0) + 4;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
@@ -1723,8 +1755,8 @@ async function generateResourcePDF(r) {
     y += 10;
   }
 
-  // QR code + map side by side
-  const imgSize = 45;
+  // QR code + map side by side — centered as a pair
+  const imgSize = 50;
   let qrPngUrl = null;
   if (hasWebsite) {
     try {
@@ -1743,26 +1775,33 @@ async function generateResourcePDF(r) {
   }
 
   if (qrPngUrl || mapImgData) {
+    const pairGap = 12;
     const startY = y;
     if (mapImgData && qrPngUrl) {
-      // Both: map left, QR right
-      doc.addImage(mapImgData, 'PNG', mx, startY, imgSize, imgSize);
-      doc.addImage(qrPngUrl, 'PNG', pageW - mx - imgSize, startY, imgSize, imgSize);
+      // Both: center the pair
+      const pairW = imgSize * 2 + pairGap;
+      const pairX = (pageW - pairW) / 2;
+      doc.addImage(mapImgData, 'PNG', pairX, startY, imgSize, imgSize);
+      doc.addImage(qrPngUrl, 'PNG', pairX + imgSize + pairGap, startY, imgSize, imgSize);
+      y += imgSize + 3;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 140, 140);
+      doc.text('Location map', pairX + imgSize / 2, y, { align: 'center' });
+      doc.text('Scan to visit website', pairX + imgSize + pairGap + imgSize / 2, y, { align: 'center' });
     } else if (mapImgData) {
       doc.addImage(mapImgData, 'PNG', (pageW - imgSize) / 2, startY, imgSize, imgSize);
-    } else if (qrPngUrl) {
-      doc.addImage(qrPngUrl, 'PNG', (pageW - imgSize) / 2, startY, imgSize, imgSize);
-    }
-    y += imgSize + 3;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(140, 140, 140);
-    if (mapImgData && qrPngUrl) {
-      doc.text('Location map', mx + imgSize / 2, y, { align: 'center' });
-      doc.text('Scan to visit website', pageW - mx - imgSize / 2, y, { align: 'center' });
-    } else if (mapImgData) {
+      y += imgSize + 3;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 140, 140);
       doc.text('Location map', pageW / 2, y, { align: 'center' });
     } else {
+      doc.addImage(qrPngUrl, 'PNG', (pageW - imgSize) / 2, startY, imgSize, imgSize);
+      y += imgSize + 3;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(140, 140, 140);
       doc.text('Scan to visit website', pageW / 2, y, { align: 'center' });
     }
     y += 8;
