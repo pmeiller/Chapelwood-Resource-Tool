@@ -481,11 +481,12 @@
   .category-tile {
     background: var(--white);
     border-radius: 12px;
-    padding: 18px 16px 16px;
+    padding: 18px 16px 16px 14px;
     cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    border: 2px solid transparent;
+    border: 1px solid var(--border);
+    border-left: 4px solid transparent;
     text-align: left;
   }
 
@@ -869,7 +870,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev03';
+const VERSION = '0.24-dev04';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1004,6 +1005,7 @@ function buildCategoryTiles() {
     const empty = emergency && displayCount === 0;
     const tile = document.createElement('button');
     tile.className = 'category-tile' + (empty ? ' tile-empty' : '');
+    tile.style.borderLeftColor = cat.color;
     if (!empty) tile.onclick = () => showCategory(cat);
     tile.innerHTML = `
       <div class="tile-icon" style="background:${cat.color}20; color:${cat.color}">${cat.emoji}</div>
@@ -1339,6 +1341,9 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev04', date: 'May 2026', notes: [
+    'Category tiles now have a colored left border matching their category color (mirrors the card style)',
+  ]},
   { version: '0.24-dev03', date: 'May 2026', notes: [
     'Formatting pass: card layout and PDF for clarity and readability',
     'Fixed Generate PDF button size (was inheriting browser default instead of matching other buttons)',
