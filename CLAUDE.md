@@ -70,7 +70,7 @@ Both remotes are configured in `~/Chapelwood-Resource-Tool/.git/config`. All wor
 
 | Situation | Format | Example |
 |---|---|---|
-| Dev commits | `X.XX-devNN` | `0.24-dev03` |
+| Dev commits | `X.XX-devNN` | `0.24-dev05` |
 | Production push | `X.XX` (bump by 0.01) | `0.25` |
 
 **Rules:**
@@ -92,7 +92,7 @@ cd ~/Chapelwood-Resource-Tool
 
 # Dev (test first):
 git add index.html          # or other changed files
-git commit -m "v0.24-dev03 — description"
+git commit -m "v0.24-dev06 — description"
 git push dev main
 
 # Production (after dev testing passes):
@@ -124,8 +124,20 @@ The Publish button uses the GitHub Contents API (`PUT /repos/.../contents/resour
 
 ### Category Browsing
 - Tiles show resource count per category
+- Each tile has a **4px colored left border** in that category's color (mirrors the card style)
 - Clicking a tile shows all resources in that category as cards
+- Each card has a colored left border in the category color
 - Each card has: name, org, access badge, description, eligibility, hours, walk-ins, languages, website/phone/map/PDF buttons
+
+### Card Layout (detail rows)
+Fields render in this order, each as a bold-label / value row:
+1. 📍 Address
+2. 🌐 Languages
+3. **Apply:** (its own row — not inline with address/languages)
+4. **Hours:** (bold label, consistent with Walk-ins)
+5. **Walk-ins:**
+6. ℹ️ Note: (Other Info)
+7. Also listed as: (Duplicate note, italic/muted)
 
 ### Search
 - Searches across: Resource Name, Description, Organization, Eligibility, Type, SubType, Address, Languages
@@ -145,23 +157,32 @@ The Publish button uses the GitHub Contents API (`PUT /repos/.../contents/resour
 - Supported: **Español** (`es`), **한국어** (`ko`)
 - Preference saved to `localStorage` (`cwLanguage`) and restored on load
 - When a language is active, opening a category triggers translation for all cards in that view
-- Translated fields (appear below their English counterparts with an amber left border):
+- Translated fields (appear below their English counterparts with an amber left border, italic):
   - `Resource Name`, `Resource Description`, `Eligibility`, `Hours`, `Walk-ins?`, `Other Info`
 - Non-translated fields: everything else (names, addresses, contact info, etc.)
-- Translation uses **MyMemory API** (free, no API key): `https://api.mymemory.translated.net/get?q={text}&langpair=en|{langCode}`
+- Translation uses **MyMemory API** (free, registered tier): `https://api.mymemory.translated.net/get?q={text}&langpair=en|{langCode}&de=pmeiller@chapelwood.org`
+- **Rate limit:** ~50,000 words/day (registered email tier). A yellow warning banner appears at the top if the cap is hit. Silent English fallback for individual field failures.
 - **Cache:** `translationCache[langCode][resourceIndex][fieldKey]` — session-scoped in-memory object; cleared when language changes; lost on page refresh (intentional)
-- **Rate limit:** MyMemory free tier caps at ~500 words/day per IP. If hit, a yellow warning banner appears at the top. Silent English fallback for individual field failures.
 - **Language chip** (`ES` / `KO`) shown on each card when translation is active
+
+#### Translation block styling
+- `margin-top: 3px` — translation hugs the English source text above it
+- `margin-bottom: 10px` — breathing room before the next field
+- `border-left: 3px solid #f59e0b` — amber left rule
+- `font-style: italic`, `color: #4b3f2f`
+- The eligibility translation appears **inside** the yellow eligibility box
 
 ### PDF Generation
 - Triggered by the **📄 Generate PDF** button on each resource card
 - Uses jsPDF 2.5.1 + qrcode-generator 1.4.4 (loaded on demand from cdnjs)
 - PDF includes:
   - Category-colored header bar
-  - Resource name, org, type/access, description, eligibility (yellow box), address, hours, walk-ins, languages, application, notes, phone, website
-  - **QR code** (right side, ~45mm) linking to the resource website
-  - **Location map** (left side, ~45mm) — geocoded via Nominatim, rendered from OSM tiles; only shown if a physical address is present
-  - QR code and map appear side by side at the bottom with captions
+  - Resource name, org, type/access
+  - Description (no label — flows naturally after the header)
+  - Eligibility in a yellow box (label + content, tightly padded)
+  - Address, Hours, Walk-ins, Languages, How to Apply, Notes, Phone, Website (two-column table rows)
+  - **QR code** and **Location map** centered as a balanced pair (~50mm each, 12mm gap), with captions
+- **Map:** geocoded via Nominatim, rendered from OSM tiles; only shown if a physical address is present
 - **Bilingual PDF:** when a language is active, translated text appears below each English field with an amber left rule (italic, warm dark color). Eligibility translation appears inside the yellow box.
 - If a translation hasn't been fetched yet (card never opened), it's fetched at PDF generation time.
 
@@ -220,10 +241,12 @@ Mirror copies kept in `~/Claude/` after every push:
 - **GitHub PAT** — stored in `localStorage` (`cwGithubToken`) in the browser; never committed to the repo
 - **Dirty state** — admin tool tracks unsaved changes in `sessionStorage` (`cwDirty`); persists through same-tab reloads, resets on fresh session
 - **Translation cache** — session-scoped JS object `translationCache[langCode][ridx][field]`; not persisted to localStorage
-- **MyMemory API** — free translation, no API key; rate limit ~500 words/day per IP; silent English fallback on error; yellow cap warning banner on 429
+- **MyMemory API** — registered-email tier (~50k words/day); `&de=pmeiller@chapelwood.org` param in every request; yellow cap warning banner on 429; silent English fallback on individual errors
 - **Map tiles** — OSM tiles at `https://tile.openstreetmap.org/{z}/{x}/{y}.png` have `Access-Control-Allow-Origin: *`; used for in-browser canvas map generation for PDFs. Geocoding via Nominatim (no API key required).
 - **PDF libraries** — jsPDF 2.5.1 + qrcode-generator 1.4.4, loaded on demand from cdnjs
 - **QR codes** — qrcode-generator GIF → canvas → PNG pipeline (the npm `qrcode` package fails in browsers)
 - **Emergency mode** — `body.emergency-mode` CSS class; `isHot(r)` helper checks `Hot List?` field; does not persist across page loads
 - **Sticky headers** — admin tool table uses `.table-wrap { overflow: auto }` as the scroll container so `thead th { top: 0 }` always sticks to the table, not the viewport
 - **buildCard()** — shared card builder used by both the results view and (formerly) hot-list view; `resourceIdx` must be declared before the `tslot` closure to avoid temporal dead zone errors
+- **Category tile color borders** — set inline via `tile.style.borderLeftColor = cat.color`; CSS provides `border-left: 4px solid transparent` as the base
+- **Card color borders** — set inline via `card.style.borderLeftColor = color`; same pattern as tiles
