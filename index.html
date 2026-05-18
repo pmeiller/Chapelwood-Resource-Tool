@@ -63,6 +63,15 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   }
 
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-decoration: none;
+    flex: 1;
+    min-width: 0;
+  }
+
   .header-logo {
     height: 36px;
     flex-shrink: 0;
@@ -729,7 +738,7 @@
       flex-wrap: wrap;
       gap: 6px 10px;
     }
-    header > a:first-child {   /* logo + divider + title link */
+    .header-brand {
       flex: 1 1 100%;
       gap: 10px;
     }
@@ -787,7 +796,7 @@
 <body>
 
 <header>
-  <a href="./" style="display:flex;align-items:center;gap:16px;text-decoration:none;flex:1;min-width:0;">
+  <a href="./" class="header-brand">
     <img class="header-logo"
       src="https://chapelwood.org/wp-content/uploads/2025/03/Chapelwood-Logo-White-1024x168.webp"
       alt="Chapelwood UMC">
@@ -884,7 +893,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev06';
+const VERSION = '0.24-dev07';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1355,6 +1364,9 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev07', date: 'May 2026', notes: [
+    'Fix mobile header (dev06 did not work — inline style on logo link was overriding the media query; moved to CSS class)',
+  ]},
   { version: '0.24-dev06', date: 'May 2026', notes: [
     'Mobile header: two-row layout — logo+title on top, buttons on second row; no more crowding',
     'Mobile header: hides decorative subtitle and leaves image to save space',
