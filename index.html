@@ -723,7 +723,21 @@
 
   /* ── RESPONSIVE ──────────────────────────────────── */
   @media (max-width: 600px) {
-    header { padding: 12px 16px; }
+    /* Two-row header: logo+title fills row 1, buttons wrap to row 2 */
+    header {
+      padding: 10px 14px;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+    }
+    header > a:first-child {   /* logo + divider + title link */
+      flex: 1 1 100%;
+      gap: 10px;
+    }
+    .header-logo { height: 26px; }
+    .header-title { font-size: 0.9rem; }
+    .header-title span { display: none; }  /* hide "Volunteer Reference Tool" subtitle */
+    .header-leaves { display: none; }      /* decorative only, not needed on mobile */
+    .lang-wrap { margin-left: auto; }      /* push button row to the right */
     main { padding: 16px 14px 32px; }
     .search-bar, .filters { padding-left: 14px; padding-right: 14px; }
     .category-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -870,7 +884,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev05';
+const VERSION = '0.24-dev06';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1341,6 +1355,10 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev06', date: 'May 2026', notes: [
+    'Mobile header: two-row layout — logo+title on top, buttons on second row; no more crowding',
+    'Mobile header: hides decorative subtitle and leaves image to save space',
+  ]},
   { version: '0.24-dev05', date: 'May 2026', notes: [
     'Translation API: added registered email to requests, raising daily limit from ~500 to ~50,000 words',
   ]},
