@@ -59,6 +59,10 @@ Both remotes are configured in `~/Chapelwood-Resource-Tool/.git/config`. All wor
 | `resources.json` | All resource data — 20-column JSON array |
 | `index.html` | Public viewer — category tiles, keyword search, emergency mode, translation, PDF |
 | `admin-tool.html` | Admin editor — add/edit/delete resources, column filters, publish to GitHub |
+| `manifest.json` | PWA manifest — app identity, icons, display mode |
+| `sw.js` | Service worker — offline caching (cache-first shell, network-first data) |
+| `icons/icon-192.png` | PWA icon 192×192 — home screen, splash screen |
+| `icons/icon-512.png` | PWA icon 512×512 — splash screen, high-res |
 | `Code.gs` | Google Apps Script — powers the Sheet's pull/publish workflow |
 | `CLAUDE.md` | This file |
 
@@ -231,6 +235,30 @@ Application, Other Info, Duplicate?, Verified
 Mirror copies kept in `~/Claude/` after every push:
 - `~/Claude/index.html`
 - `~/Claude/admin-tool.html`
+
+---
+
+## PWA (Progressive Web App)
+
+The app installs as a PWA on Android and iOS via "Add to Home Screen."
+
+**Files:** `manifest.json`, `sw.js`, `icons/icon-192.png`, `icons/icon-512.png`
+
+**Caching strategy:**
+- Shell files (`index.html`, `admin-tool.html`, `manifest.json`, icons) → **cache-first**
+- `resources.json` → **network-first**, falls back to cache when offline
+- External resources (fonts, CDN libs, APIs, map tiles) → **network only** (fail gracefully as they already do)
+
+**Update notification:** When a new SW version is detected (`updatefound` event), an `#swUpdateBanner` div is shown above the search bar with a Refresh button.
+
+**Dev vs. production paths:** `manifest.json` and `sw.js` use hardcoded path prefixes. The dev versions use `/Chapelwood-Resource-Tool-Dev/`. When promoting to production:
+1. Update `start_url` and `scope` in `manifest.json` to `/Chapelwood-Resource-Tool/`
+2. Update all paths in `SHELL_FILES` and `DATA_FILES` in `sw.js` to `/Chapelwood-Resource-Tool/`
+3. Bump `CACHE_NAME` in `sw.js` (e.g. `cw-resources-v1` → `cw-resources-v2`) to force cache refresh
+
+**What works offline:** Category browsing, search, emergency mode, admin shell (password screen). PDF without map, since jsPDF loads from cdnjs.
+
+**What requires network:** Translation (MyMemory API), map tiles (OSM/Nominatim), QR code lib (cdnjs), Admin publish (GitHub API).
 
 ---
 

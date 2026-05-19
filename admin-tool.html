@@ -7,6 +7,12 @@
 <link rel="icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-32x32.webp" sizes="32x32" />
 <link rel="icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-192x192.webp" sizes="192x192" />
 <link rel="apple-touch-icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-180x180.webp" />
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CW Resources">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1362,6 +1368,15 @@ function showToast(msg, type = '') {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
 }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>

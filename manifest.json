@@ -1,0 +1,25 @@
+{
+  "name": "Chapelwood Resource Finder",
+  "short_name": "CW Resources",
+  "description": "Community resource finder for Chapelwood UMC volunteers, Houston TX",
+  "start_url": "/Chapelwood-Resource-Tool-Dev/",
+  "scope": "/Chapelwood-Resource-Tool-Dev/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#171919",
+  "theme_color": "#171919",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -7,6 +7,12 @@
 <link rel="icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-32x32.webp" sizes="32x32" />
 <link rel="icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-192x192.webp" sizes="192x192" />
 <link rel="apple-touch-icon" href="https://chapelwood.org/wp-content/uploads/2025/04/cropped-Green_Favicon-180x180.webp" />
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CW Resources">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -224,6 +230,31 @@
     text-align: center;
   }
   #translationCapBanner.visible { display: block; }
+
+  #swUpdateBanner {
+    display: none;
+    background: #1e293b;
+    color: #fff;
+    padding: 9px 20px;
+    font-size: 0.84rem;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  #swUpdateBanner button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    color: #fff;
+    border-radius: 5px;
+    padding: 3px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  #swUpdateBanner button:hover { background: rgba(255,255,255,0.25); }
 
   /* ── SEARCH BAR ─────────────────────────────────── */
   .search-bar {
@@ -825,6 +856,11 @@
   ⚠️ Daily translation limit reached — showing English only. Translations will resume tomorrow.
 </div>
 
+<div id="swUpdateBanner">
+  ⟳ An update is available. &nbsp;
+  <button onclick="window.location.reload()">Refresh</button>
+</div>
+
 <div class="search-bar">
   <div class="search-inner">
     <div class="search-input-wrap">
@@ -893,7 +929,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev07';
+const VERSION = '0.24-dev08';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1364,6 +1400,13 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev08', date: 'May 2026', notes: [
+    'PWA support: manifest.json, service worker (sw.js), and app icons added',
+    'Offline: category browsing, search, and emergency mode work without network',
+    'resources.json served from SW cache when offline; refreshed network-first when online',
+    'Update banner appears when a new version of the app is available (click Refresh)',
+    'Add to Home Screen works on Android Chrome and iOS Safari',
+  ]},
   { version: '0.24-dev07', date: 'May 2026', notes: [
     'Fix mobile header (dev06 did not work — inline style on logo link was overriding the media query; moved to CSS class)',
   ]},
@@ -1860,5 +1903,25 @@ async function generateResourcePDF(r) {
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => {
+        // Show update banner when a new service worker is waiting
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              const banner = document.getElementById('swUpdateBanner');
+              if (banner) banner.style.display = 'flex';
+            }
+          });
+        });
+      }).catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
 </body>
 </html>
