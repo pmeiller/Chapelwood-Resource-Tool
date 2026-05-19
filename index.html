@@ -565,6 +565,13 @@
     font-weight: 500;
   }
 
+  .tile-trans .translation-block {
+    font-size: 0.78rem;
+    margin-top: 2px;
+    margin-bottom: 0;
+    padding: 2px 0 0 8px;
+  }
+
   /* ── RESULTS VIEW ────────────────────────────────── */
   #resultsView { display: none; }
 
@@ -929,7 +936,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev08';
+const VERSION = '0.24-dev09';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1069,11 +1076,13 @@ function buildCategoryTiles() {
     tile.innerHTML = `
       <div class="tile-icon" style="background:${cat.color}20; color:${cat.color}">${cat.emoji}</div>
       <div class="tile-name">${cat.label}</div>
+      <div class="tile-trans" data-cat="${cat.key}"></div>
       <div class="tile-count">${displayCount} resource${displayCount !== 1 ? 's' : ''}</div>
     `;
     grid.appendChild(tile);
   });
   document.getElementById('footerResourceCount').textContent = resources.length;
+  if (activeLanguage) translateTiles();
 }
 
 // ── SHOW CATEGORY ─────────────────────────────────────────────────────────────
@@ -1258,6 +1267,28 @@ function applyEmergencyMode() {
 // ── TRANSLATION ENGINE ───────────────────────────────────────────────────────
 const TRANSLATABLE_FIELDS = ['Resource Name', 'Resource Description', 'Eligibility', 'Hours', 'Walk-ins?', 'Other Info'];
 const LANGUAGES = { es: 'Español', ko: '한국어' };
+
+// Cache for category tile label translations: { langCode: { catKey: translatedLabel } }
+const tileLabelCache = {};
+
+async function translateTiles() {
+  if (!activeLanguage) return;
+  if (!tileLabelCache[activeLanguage]) tileLabelCache[activeLanguage] = {};
+  const cache = tileLabelCache[activeLanguage];
+  const slots = document.querySelectorAll('.tile-trans[data-cat]');
+  await Promise.all([...slots].map(async slot => {
+    const key = slot.dataset.cat;
+    const cat = CATEGORIES.find(c => c.key === key);
+    if (!cat) return;
+    if (cache[key] === undefined) {
+      cache[key] = await translateField(cat.label, activeLanguage);
+    }
+    const tx = cache[key];
+    if (tx && tx !== cat.label) {
+      slot.innerHTML = `<div class="translation-block">${tx}</div>`;
+    }
+  }));
+}
 const translationCache = {};   // translationCache[langCode][ridx][field] = text
 let activeLanguage = null;
 let translationCapReached = false;
@@ -1348,21 +1379,25 @@ function setLanguage(langCode) {
   localStorage.setItem('cwLanguage', langCode);
   translationCapReached = false;
   document.getElementById('translationCapBanner').classList.remove('visible');
-  // Clear cache when language changes
+  // Clear card + tile caches when language changes
   Object.keys(translationCache).forEach(k => delete translationCache[k]);
+  Object.keys(tileLabelCache).forEach(k => delete tileLabelCache[k]);
   updateLangBtn();
   closeLangDropdown();
   // Re-render current view with new language
   if (currentCategory) showCategory(currentCategory);
+  else { buildCategoryTiles(); }
 }
 
 function clearLanguage() {
   activeLanguage = null;
   localStorage.removeItem('cwLanguage');
   Object.keys(translationCache).forEach(k => delete translationCache[k]);
+  Object.keys(tileLabelCache).forEach(k => delete tileLabelCache[k]);
   updateLangBtn();
   closeLangDropdown();
   if (currentCategory) showCategory(currentCategory);
+  else { buildCategoryTiles(); }
 }
 
 function closeLangDropdown() {
@@ -1396,10 +1431,14 @@ buildCategoryTiles();
 fetchResourcesData();
 // Restore saved language preference
 const _savedLang = localStorage.getItem('cwLanguage');
-if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLangBtn(); }
+if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLangBtn(); translateTiles(); }
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev09', date: 'May 2026', notes: [
+    'Category tiles now show translated label inline when a language is active (same amber-border style as cards)',
+    'PWA icon updated to Amber\'s photo',
+  ]},
   { version: '0.24-dev08', date: 'May 2026', notes: [
     'PWA support: manifest.json, service worker (sw.js), and app icons added',
     'Offline: category browsing, search, and emergency mode work without network',
