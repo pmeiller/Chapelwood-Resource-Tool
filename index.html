@@ -1006,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev10';
+const VERSION = '0.24-dev11';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1179,7 +1179,8 @@ function buildCategoryTiles() {
     // "All [Type]" button
     const allBtn = document.createElement('button');
     allBtn.className = 'subtype-btn subtype-all';
-    allBtn.innerHTML = `All ${typeName} <span class="subtype-count">(${displayCount})</span>`;
+    allBtn.dataset.alltype = typeName;
+    allBtn.innerHTML = `All ${typeName} <span class="subtype-count">(${displayCount})</span><span class="subtype-trans"></span>`;
     allBtn.onclick = e => { e.stopPropagation(); showCategoryAll(typeName); };
     panel.appendChild(allBtn);
 
@@ -1439,6 +1440,21 @@ async function translateTiles() {
   // ── Sub-type button labels (only visible ones — inside open accordions) ──
   if (!subtypeLabelCache[activeLanguage]) subtypeLabelCache[activeLanguage] = {};
   const stCache = subtypeLabelCache[activeLanguage];
+
+  // "All [Type]" buttons — translate the full phrase "All Childcare" etc.
+  const allBtns = document.querySelectorAll('.subtype-btn[data-alltype]');
+  await Promise.all([...allBtns].map(async btn => {
+    const typeName = btn.dataset.alltype;
+    const phrase = `All ${typeName}`;
+    if (stCache[phrase] === undefined) stCache[phrase] = await translateField(phrase, activeLanguage);
+    const tx = stCache[phrase];
+    if (tx && tx !== phrase) {
+      const transSpan = btn.querySelector('.subtype-trans');
+      if (transSpan) transSpan.innerHTML = `<div class="translation-block">${tx}</div>`;
+    }
+  }));
+
+  // Individual sub-type buttons
   const stBtns = document.querySelectorAll('.subtype-btn[data-subtype]');
   await Promise.all([...stBtns].map(async btn => {
     const st = btn.dataset.subtype;
@@ -1610,6 +1626,9 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev11', date: 'May 2026', notes: [
+    '"All [Type]" accordion buttons now show inline translation when a language is active',
+  ]},
   { version: '0.24-dev10', date: 'May 2026', notes: [
     'Categories now driven directly by "Resource Type" column — no keyword matching',
     'Category view redesigned: stacked accordion rectangles instead of square grid',
