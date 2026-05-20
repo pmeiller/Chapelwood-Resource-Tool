@@ -290,7 +290,7 @@
   .col-access  { min-width: 120px; }
   .col-hotlist { min-width: 60px; text-align: center; }
   .col-verified { min-width: 90px; }
-  .col-actions  { min-width: 90px; white-space: nowrap; }
+  .col-actions  { min-width: 115px; white-space: nowrap; }
 
   .hot-badge {
     display: inline-block;
@@ -445,6 +445,27 @@
   .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
   .field textarea { resize: vertical; min-height: 72px; }
   .field-note { font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
+
+  /* ── SELECT + ADD-ITEM ROW ── */
+  .select-add-wrap { display: flex; gap: 6px; align-items: stretch; }
+  .select-add-wrap select { flex: 1; min-width: 0; }
+  .btn-add-item {
+    flex-shrink: 0;
+    width: 32px;
+    background: var(--accent-light);
+    border: 2px solid var(--accent);
+    border-radius: 7px;
+    color: var(--accent);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+  }
+  .btn-add-item:hover { background: var(--accent); color: #fff; }
 
   /* ── DELETE CONFIRM ── */
   .del-modal .modal-body { text-align: center; padding: 30px 22px; }
@@ -692,13 +713,18 @@
 
         <div class="field">
           <label>Resource Type *</label>
-          <input type="text" id="f_type" placeholder="e.g. Mental Health - Counseling/Therapy" list="typeList">
-          <datalist id="typeList"></datalist>
+          <div class="select-add-wrap">
+            <select id="f_type"></select>
+            <button type="button" class="btn-add-item" title="Add new type" onclick="addSelectItem('f_type')">＋</button>
+          </div>
         </div>
 
         <div class="field">
           <label>Resource SubType</label>
-          <input type="text" id="f_subtype" placeholder="e.g. Counseling/Therapy">
+          <div class="select-add-wrap">
+            <select id="f_subtype"></select>
+            <button type="button" class="btn-add-item" title="Add new sub-type" onclick="addSelectItem('f_subtype')">＋</button>
+          </div>
         </div>
 
         <div class="field">
@@ -712,14 +738,17 @@
 
         <div class="field">
           <label>Public Access?</label>
-          <select id="f_access">
-            <option value="Public Access">✅ Public Access</option>
-            <option value="Restricted - Outside (SBISD)">🔑 Restricted - Outside (SBISD)</option>
-            <option value="Restricted - Outside (MAM)">🔑 Restricted - Outside (MAM)</option>
-            <option value="Restricted - Outside (CIS)">🔑 Restricted - Outside (CIS)</option>
-            <option value="Restricted - Outside (MAM Rep - David Coles)">🔑 Restricted - Outside (MAM Rep)</option>
-            <option value="Restricted - Serving Ministry">🔒 Restricted - Serving Ministry</option>
-          </select>
+          <div class="select-add-wrap">
+            <select id="f_access">
+              <option value="Public Access">✅ Public Access</option>
+              <option value="Restricted - Outside (SBISD)">🔑 Restricted - Outside (SBISD)</option>
+              <option value="Restricted - Outside (MAM)">🔑 Restricted - Outside (MAM)</option>
+              <option value="Restricted - Outside (CIS)">🔑 Restricted - Outside (CIS)</option>
+              <option value="Restricted - Outside (MAM Rep - David Coles)">🔑 Restricted - Outside (MAM Rep)</option>
+              <option value="Restricted - Serving Ministry">🔒 Restricted - Serving Ministry</option>
+            </select>
+            <button type="button" class="btn-add-item" title="Add new access type" onclick="addSelectItem('f_access')">＋</button>
+          </div>
         </div>
 
         <div class="field form-full">
@@ -823,12 +852,15 @@
 
 const PASSWORD = 'Amber';
 
-// GitHub repo constants
+// GitHub repo constants — auto-detect dev vs production from the URL
 const GITHUB_OWNER  = 'pmeiller';
-const GITHUB_REPO   = 'Chapelwood-Resource-Tool';
+const IS_DEV_ENV    = window.location.pathname.includes('Chapelwood-Resource-Tool-Dev');
+const GITHUB_REPO   = IS_DEV_ENV ? 'Chapelwood-Resource-Tool-Dev' : 'Chapelwood-Resource-Tool';
 const GITHUB_FILE   = 'resources.json';
 const GITHUB_BRANCH = 'main';
-const RESOURCES_JSON_URL = 'https://pmeiller.github.io/Chapelwood-Resource-Tool/resources.json';
+const RESOURCES_JSON_URL = IS_DEV_ENV
+  ? 'https://pmeiller.github.io/Chapelwood-Resource-Tool-Dev/resources.json'
+  : 'https://pmeiller.github.io/Chapelwood-Resource-Tool/resources.json';
 
 // ═══════════════════════════════════════════════════════════════════════
 // PASSWORD / SESSION
@@ -1020,14 +1052,60 @@ async function discardChanges() {
 // ═══════════════════════════════════════════════════════════════════════
 
 function init() {
-  const types = [...new Set(resources.map(r => r['Resource Type']).filter(Boolean))].sort();
-  const dl = document.getElementById('typeList');
-  dl.innerHTML = types.map(t => `<option value="${t}">`).join('');
   updateFilterOptions();
   renderTable();
   fetchResourcesData();
   // Restore dirty banner if session was dirty before reload
   if (isDirty()) setDirty(true);
+}
+
+// ── Populate Type/SubType selects from current data ──────────────────────────
+function populateTypeSelects(currentType, currentSubtype) {
+  const types    = [...new Set(resources.map(r => r['Resource Type']).filter(Boolean))].sort();
+  const subtypes = [...new Set(resources.map(r => r['Resource SubType']).filter(Boolean))].sort();
+
+  const typeSel = document.getElementById('f_type');
+  typeSel.innerHTML = '<option value="">— Select Type —</option>' +
+    types.map(t => `<option value="${t}">${esc(t)}</option>`).join('');
+  if (currentType) {
+    // Ensure the value is present even if not in dataset yet (e.g. from a copy)
+    if (![...typeSel.options].some(o => o.value === currentType)) {
+      typeSel.appendChild(new Option(currentType, currentType));
+    }
+    typeSel.value = currentType;
+  }
+
+  const stSel = document.getElementById('f_subtype');
+  stSel.innerHTML = '<option value="">— None —</option>' +
+    subtypes.map(t => `<option value="${t}">${esc(t)}</option>`).join('');
+  if (currentSubtype) {
+    if (![...stSel.options].some(o => o.value === currentSubtype)) {
+      stSel.appendChild(new Option(currentSubtype, currentSubtype));
+    }
+    stSel.value = currentSubtype;
+  }
+}
+
+// ── Add a new item to any select dropdown ────────────────────────────────────
+function addSelectItem(selectId) {
+  const sel = document.getElementById(selectId);
+  const newVal = prompt('Enter the new option to add:');
+  if (!newVal || !newVal.trim()) return;
+  const val = newVal.trim();
+  // Skip if already present
+  if ([...sel.options].some(o => o.value === val)) { sel.value = val; return; }
+  // Insert in alphabetical order
+  const opt = new Option(val, val);
+  let inserted = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value && sel.options[i].value.toLowerCase() > val.toLowerCase()) {
+      sel.insertBefore(opt, sel.options[i]);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) sel.appendChild(opt);
+  sel.value = val;
 }
 if (sessionStorage.getItem('cwAdmin') === '1') init();
 
@@ -1125,6 +1203,7 @@ function renderTable() {
       <td class="col-actions">
         <div class="row-actions">
           <button class="icon-btn" title="Edit" onclick="openEditModal(${realIndex})">✏️</button>
+          <button class="icon-btn" title="Duplicate" onclick="openCopyModal(${realIndex})">📋</button>
           <button class="icon-btn del" title="Delete" onclick="openDelModal(${realIndex})">🗑️</button>
         </div>
       </td>
@@ -1187,6 +1266,7 @@ function readForm() {
 function openAddModal() {
   editingIndex = null;
   document.getElementById('modalTitle').textContent = '＋ Add New Resource';
+  populateTypeSelects('', '');
   FIELDS.forEach(([, id]) => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('f_access').value = 'Public Access';
   openModal('editModal');
@@ -1195,7 +1275,18 @@ function openAddModal() {
 function openEditModal(index) {
   editingIndex = index;
   document.getElementById('modalTitle').textContent = '✏️ Edit Resource';
-  populateForm(resources[index]);
+  const r = resources[index];
+  populateTypeSelects(r['Resource Type'] || '', r['Resource SubType'] || '');
+  populateForm(r);
+  openModal('editModal');
+}
+
+function openCopyModal(index) {
+  editingIndex = null;  // null = add new
+  document.getElementById('modalTitle').textContent = '📋 Copy Resource';
+  const r = resources[index];
+  populateTypeSelects(r['Resource Type'] || '', r['Resource SubType'] || '');
+  populateForm(r);  // pre-fill with copy's data
   openModal('editModal');
 }
 
