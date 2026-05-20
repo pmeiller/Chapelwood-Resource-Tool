@@ -1934,5 +1934,27 @@
     "Other Info": null,
     "Duplicate?": "No",
     "Verified": "2026-05-20"
+  },
+  {
+    "Resource Name": "St. Jerome Catholic Church Food Pantry",
+    "Organization Name": "St. Jerome Catholic Church",
+    "Program Name (If Applicable)": "St. Vincent de Paul",
+    "Resource Type": "Material Assistance",
+    "Resource SubType": "Food",
+    "Hot List?": null,
+    "Public Access?": "Public Access",
+    "Resource Description": "Food distribution open to all, but limited.",
+    "Eligibility": "Open to all.",
+    "Address": "8825 Kempwood Dr. Houston, TX 77080",
+    "Public Phone Number": "713-468-9555",
+    "Public Email": null,
+    "Public Website": "No useful website",
+    "Hours": "Tu/Th 9am-noon; 4th Saturdays 10am-noon",
+    "Walk-ins?": "Yes",
+    "Languages": "English",
+    "Application": "Walk in",
+    "Other Info": null,
+    "Duplicate?": null,
+    "Verified": "2026-05-20"
   }
 ]
