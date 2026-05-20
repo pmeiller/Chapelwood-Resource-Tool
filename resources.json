@@ -1846,5 +1846,27 @@
     "Other Info": null,
     "Duplicate?": null,
     "Verified": "2026-05-26"
+  },
+  {
+    "Resource Name": "Faith Center - Spring Branch - Food Pantry and Clothes Closet",
+    "Organization Name": "Houston First Baptist Church",
+    "Program Name (If Applicable)": "Faith Center",
+    "Resource Type": "Material Assistance",
+    "Resource SubType": "Food",
+    "Hot List?": null,
+    "Public Access?": "Public Access",
+    "Resource Description": "Food pantry and clothes closet - very limited.",
+    "Eligibility": "NOTE: By appointment only. To make an appointment to receive food and clothes, please call 713.554.8820 Monday - Friday from 9a-2p leave a message with your full name and phone number. Families will be able to come 60 days in between each visit. Both ID and Proof of address is required at the time of the appointment.",
+    "Address": "8244 Long Point Rd., Houston, TX 77055",
+    "Public Phone Number": "713-554-8820",
+    "Public Email": null,
+    "Public Website": "https://www.houstonsfirst.org/missions/faith-centers",
+    "Hours": "Open Tue, Wed, Thu, & Sat @ 10a-1p",
+    "Walk-ins?": null,
+    "Languages": "English, possibly Spanish",
+    "Application": "See Eligibility Requirements",
+    "Other Info": null,
+    "Duplicate?": "Yes - also listed as a clothes closet",
+    "Verified": "2026-20-05"
   }
 ]
