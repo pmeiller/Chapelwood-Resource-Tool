@@ -1824,5 +1824,27 @@
     "Other Info": null,
     "Duplicate?": null,
     "Verified": null
+  },
+  {
+    "Resource Name": "Test Resource",
+    "Organization Name": "Jim Bob's Bass-o-matics",
+    "Program Name (If Applicable)": null,
+    "Resource Type": "Classes and Trainings",
+    "Resource SubType": null,
+    "Hot List?": null,
+    "Public Access?": "Public Access",
+    "Resource Description": "Supplies bass-o-matics to underprivileged youth",
+    "Eligibility": "only Alaska area codes",
+    "Address": null,
+    "Public Phone Number": "5555555555",
+    "Public Email": "info@bassomatic.org",
+    "Public Website": null,
+    "Hours": "5am-5pm, M-F",
+    "Walk-ins?": "No",
+    "Languages": "Spanish only",
+    "Application": null,
+    "Other Info": null,
+    "Duplicate?": null,
+    "Verified": null
   }
 ]
