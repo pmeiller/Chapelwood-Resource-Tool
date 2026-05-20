@@ -341,6 +341,21 @@
     line-height: 1.35;
     text-align: center;
   }
+  #emgTextTrans {
+    font-size: 0.82rem;
+    font-style: italic;
+    font-weight: 400;
+    color: rgba(255,255,255,0.82);
+    margin-top: 2px;
+    text-align: center;
+  }
+  #emgTextTrans .translation-block {
+    background: none;
+    border-left: 2px solid rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.82);
+    margin: 3px 0 0 0;
+    padding-left: 6px;
+  }
   /* Toggle switch */
   .emg-toggle-wrap {
     display: flex;
@@ -512,57 +527,72 @@
   }
 
   .category-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 28px;
   }
 
   .category-tile {
     background: var(--white);
-    border-radius: 12px;
-    padding: 18px 16px 16px 14px;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-radius: 10px;
     border: 1px solid var(--border);
     border-left: 4px solid transparent;
-    text-align: left;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: hidden;
   }
 
-  .category-tile:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.13);
+  .category-tile.tile-empty { opacity: 0.4; }
+
+  .tile-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: background 0.12s;
+    user-select: none;
   }
-  .category-tile.tile-empty {
-    opacity: 0.4;
-    cursor: default;
-    pointer-events: none;
-  }
+  .tile-header:hover { background: rgba(0,0,0,0.03); }
+  .tile-empty .tile-header { cursor: default; }
 
   .tile-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    margin-bottom: 10px;
+    font-size: 1.15rem;
+    flex-shrink: 0;
   }
 
+  .tile-text { flex: 1; min-width: 0; }
+
   .tile-name {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 700;
-    line-height: 1.3;
     color: var(--dark);
-    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
+  .tile-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
   }
 
   .tile-count {
-    font-size: 0.75rem;
+    font-size: 0.73rem;
     color: var(--text-muted);
     font-weight: 500;
+  }
+
+  .tile-chevron {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1;
   }
 
   .tile-trans .translation-block {
@@ -570,6 +600,45 @@
     margin-top: 2px;
     margin-bottom: 0;
     padding: 2px 0 0 8px;
+  }
+
+  /* ── ACCORDION SUBTYPES PANEL ── */
+  .tile-subtypes {
+    border-top: 1px solid var(--border);
+    padding: 8px 12px 10px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: var(--bg);
+  }
+
+  .subtype-btn {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 11px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--dark);
+    transition: background 0.12s, border-color 0.12s;
+    text-align: left;
+    line-height: 1.35;
+  }
+  .subtype-btn:hover { background: #f0f4ff; border-color: #aac; }
+  .subtype-all { font-weight: 700; }
+
+  .subtype-count {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    margin-left: 2px;
+  }
+
+  .subtype-trans .translation-block {
+    font-size: 0.75rem;
+    margin-top: 1px;
+    margin-bottom: 0;
+    padding: 1px 0 0 6px;
+    display: block;
   }
 
   /* ── RESULTS VIEW ────────────────────────────────── */
@@ -885,7 +954,8 @@
 <div id="emergencyBanner" onclick="toggleEmergency(event)">
   <span class="emergency-icon">🚨</span>
   <div class="emg-center">
-    <span class="emergency-text">Does our neighbor require life-sustaining care in the next 24 hours?<br>Click here for emergency resources.</span>
+    <span class="emergency-text">Click here for emergency resources (life-sustaining in next 24 hours?)</span>
+    <div id="emgTextTrans"></div>
     <div class="emg-toggle-wrap" onclick="event.stopPropagation()">
       <div class="emg-toggle-labels">
         <span id="emgLblNo" class="lbl-active">No</span>
@@ -936,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev09';
+const VERSION = '0.24-dev10';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -960,38 +1030,42 @@ async function fetchResourcesData() {
 }
 
 // ── CATEGORY CONFIG ─────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { key: 'food',        label: 'Food',              emoji: '🥦', color: '#2e7d32',  keywords: ['food','meal','lunch','pantry','snap','nutrition'] },
-  { key: 'financial',   label: 'Financial Aid',     emoji: '💵', color: '#1565c0',  keywords: ['financial assistance','rent','mortgage','utilities','clothing','childcare'] },
-  { key: 'housing',     label: 'Housing',           emoji: '🏠', color: '#6a1b9a',  keywords: ['rent','mortgage','housing','furniture'] },
-  { key: 'employment',  label: 'Employment',        emoji: '💼', color: '#e65100',  keywords: ['employment','workforce','job','career','vocational','business','innova'] },
-  { key: 'mental',      label: 'Mental Health',     emoji: '🧠', color: '#00695c',  keywords: ['mental health','counseling','therapy'] },
-  { key: 'medical',     label: 'Medical',           emoji: '🏥', color: '#c62828',  keywords: ['medical','vaccine','health','doctor'] },
-  { key: 'immigration', label: 'Immigration',       emoji: '📋', color: '#4527a0',  keywords: ['immigration','citizenship','legal','daca','naturalization'] },
-  { key: 'classes',     label: 'Classes & Training',emoji: '📚', color: '#f57f17',  keywords: ['class','training','esl','english','digital','financial ed','self-sufficiency','getting ahead','financial education'] },
-  { key: 'childcare',   label: 'Childcare',         emoji: '👶', color: '#ad1457',  keywords: ['childcare','child care','scholarship','children'] },
-  { key: 'disaster',    label: 'Disaster Relief',   emoji: '⛑️',  color: '#4e342e',  keywords: ['disaster'] },
-  { key: 'services',    label: 'Services',          emoji: '🤝', color: '#00838f',  keywords: ['benefits','navigation','case management','tax','enrollment'] },
-  { key: 'transport',   label: 'Transportation',    emoji: '🚌', color: '#37474f',  keywords: ['transport','metro','metrolift','bus','gas voucher'] },
-];
+// Emoji + color for each Resource Type value (keyed on exact strings from the data)
+const TYPE_STYLES = {
+  'Childcare':             { emoji: '👶', color: '#ad1457' },
+  'Classes and Trainings': { emoji: '📚', color: '#f57f17' },
+  'Disaster Assistance':   { emoji: '⛑️', color: '#4e342e' },
+  'Emergency Services':    { emoji: '🚨', color: '#b71c1c' },
+  'Employment':            { emoji: '💼', color: '#e65100' },
+  'Financial Assistance':  { emoji: '💵', color: '#1565c0' },
+  'Hotline':               { emoji: '📞', color: '#455a64' },
+  'Housing':               { emoji: '🏠', color: '#6a1b9a' },
+  'Immigration':           { emoji: '📋', color: '#4527a0' },
+  'Information':           { emoji: 'ℹ️', color: '#0277bd' },
+  'Legal Aid':             { emoji: '⚖️', color: '#33691e' },
+  'Material Assistance':   { emoji: '📦', color: '#5d4037' },
+  'Medical Assistance':    { emoji: '🏥', color: '#c62828' },
+  'Mental Health':         { emoji: '🧠', color: '#00695c' },
+  'Recovery':              { emoji: '💊', color: '#7b1fa2' },
+  'Services':              { emoji: '🤝', color: '#00838f' },
+  'Transportation':        { emoji: '🚌', color: '#37474f' },
+};
+const DEFAULT_TYPE_STYLE = { emoji: '🗂️', color: '#546e7a' };
 
+function getTypeStyle(typeName) {
+  return TYPE_STYLES[typeName] || DEFAULT_TYPE_STYLE;
+}
+
+// Categories derived directly from Resource Type column — no keyword matching
 function getCategoryForResource(r) {
-  const haystack = [
-    r['Resource Type'] || '',
-    r['Resource Name'] || '',
-    r['Resource Description'] || ''
-  ].join(' ').toLowerCase();
-
-  for (const cat of CATEGORIES) {
-    if (cat.keywords.some(kw => haystack.includes(kw))) return cat.key;
-  }
-  return 'services';
+  return r['Resource Type'] || 'Services';
 }
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let resources = [];
 let currentCategory = null;
 let currentSearch = '';
+const openCategories = new Set();   // which Resource Type accordions are expanded
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function accessClass(access) {
@@ -1059,30 +1133,103 @@ function mapItButton(address) {
   return `<a class="card-link link-map" href="https://maps.google.com/?q=${query}" target="_blank">🗺️ Map It</a>`;
 }
 
-// ── BUILD CATEGORY TILES ──────────────────────────────────────────────────────
+// ── BUILD CATEGORY TILES (accordion) ─────────────────────────────────────────
 function buildCategoryTiles() {
   const emergency = document.getElementById('emergencyToggle')?.checked;
   const grid = document.getElementById('categoryGrid');
   grid.innerHTML = '';
-  CATEGORIES.forEach(cat => {
-    const catResources = resources.filter(r => getCategoryForResource(r) === cat.key);
-    if (catResources.length === 0) return;
-    const displayCount = emergency ? catResources.filter(isHot).length : catResources.length;
+
+  // Derive type list from data, sorted alphabetically
+  const types = [...new Set(resources.map(r => r['Resource Type']).filter(Boolean))].sort();
+
+  types.forEach(typeName => {
+    const style = getTypeStyle(typeName);
+    const catResources = resources.filter(r => r['Resource Type'] === typeName);
+    const displayResources = emergency ? catResources.filter(isHot) : catResources;
+    const displayCount = displayResources.length;
     const empty = emergency && displayCount === 0;
-    const tile = document.createElement('button');
-    tile.className = 'category-tile' + (empty ? ' tile-empty' : '');
-    tile.style.borderLeftColor = cat.color;
-    if (!empty) tile.onclick = () => showCategory(cat);
-    tile.innerHTML = `
-      <div class="tile-icon" style="background:${cat.color}20; color:${cat.color}">${cat.emoji}</div>
-      <div class="tile-name">${cat.label}</div>
-      <div class="tile-trans" data-cat="${cat.key}"></div>
-      <div class="tile-count">${displayCount} resource${displayCount !== 1 ? 's' : ''}</div>
+    const isOpen = openCategories.has(typeName);
+
+    const tile = document.createElement('div');
+    tile.className = 'category-tile' + (empty ? ' tile-empty' : '') + (isOpen ? ' tile-open' : '');
+    tile.style.borderLeftColor = style.color;
+
+    // ── Header row ──
+    const header = document.createElement('div');
+    header.className = 'tile-header';
+    header.innerHTML = `
+      <div class="tile-icon" style="background:${style.color}20; color:${style.color}">${style.emoji}</div>
+      <div class="tile-text">
+        <div class="tile-name">${typeName}</div>
+        <div class="tile-trans" data-cat="${typeName}"></div>
+      </div>
+      <div class="tile-right">
+        <span class="tile-count">${displayCount} resource${displayCount !== 1 ? 's' : ''}</span>
+        <span class="tile-chevron">${isOpen ? '▾' : '▸'}</span>
+      </div>
     `;
+    if (!empty) header.onclick = () => toggleCategory(typeName);
+    tile.appendChild(header);
+
+    // ── Subtypes panel (hidden unless open) ──
+    const panel = document.createElement('div');
+    panel.className = 'tile-subtypes';
+    if (!isOpen) panel.style.display = 'none';
+
+    // "All [Type]" button
+    const allBtn = document.createElement('button');
+    allBtn.className = 'subtype-btn subtype-all';
+    allBtn.innerHTML = `All ${typeName} <span class="subtype-count">(${displayCount})</span>`;
+    allBtn.onclick = e => { e.stopPropagation(); showCategoryAll(typeName); };
+    panel.appendChild(allBtn);
+
+    // Individual sub-type buttons
+    const subtypes = [...new Set(
+      catResources.filter(r => r['Resource SubType']).map(r => r['Resource SubType'])
+    )].sort();
+
+    subtypes.forEach(st => {
+      const stRes = catResources.filter(r => r['Resource SubType'] === st);
+      const stCount = emergency ? stRes.filter(isHot).length : stRes.length;
+      if (emergency && stCount === 0) return;
+      const stBtn = document.createElement('button');
+      stBtn.className = 'subtype-btn';
+      stBtn.dataset.subtype = st;
+      stBtn.innerHTML = `${st}<span class="subtype-count"> (${stCount})</span><span class="subtype-trans"></span>`;
+      stBtn.onclick = e => { e.stopPropagation(); showSubtype(typeName, st); };
+      panel.appendChild(stBtn);
+    });
+
+    tile.appendChild(panel);
     grid.appendChild(tile);
   });
+
   document.getElementById('footerResourceCount').textContent = resources.length;
   if (activeLanguage) translateTiles();
+}
+
+function toggleCategory(typeName) {
+  if (openCategories.has(typeName)) openCategories.delete(typeName);
+  else openCategories.add(typeName);
+  buildCategoryTiles();
+}
+
+function showCategoryAll(typeName) {
+  const style = getTypeStyle(typeName);
+  showCategory({ key: typeName, label: typeName, ...style });
+}
+
+function showSubtype(typeName, subtype) {
+  const style = getTypeStyle(typeName);
+  currentCategory = { key: typeName, label: typeName, ...style };
+  currentSearch = '';
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').classList.remove('visible');
+  const emergency = document.getElementById('emergencyToggle')?.checked;
+  const stRes = resources.filter(r => r['Resource Type'] === typeName && r['Resource SubType'] === subtype);
+  const filtered = emergency ? stRes.filter(isHot) : stRes;
+  const title = emergency ? `🚨 ${typeName} — ${subtype}` : `${typeName} — ${subtype}`;
+  renderResults(title, filtered);
 }
 
 // ── SHOW CATEGORY ─────────────────────────────────────────────────────────────
@@ -1097,7 +1244,7 @@ function showCategory(cat) {
   document.getElementById('searchInput').value = '';
   document.getElementById('clearBtn').classList.remove('visible');
   const emergency = document.getElementById('emergencyToggle')?.checked;
-  const catResources = resources.filter(r => getCategoryForResource(r) === cat.key);
+  const catResources = resources.filter(r => r['Resource Type'] === cat.key);
   const filtered = emergency ? catResources.filter(isHot) : catResources;
   const title = emergency ? `🚨 ${cat.label} — Emergency` : cat.label;
   renderResults(title, filtered);
@@ -1268,26 +1415,52 @@ function applyEmergencyMode() {
 const TRANSLATABLE_FIELDS = ['Resource Name', 'Resource Description', 'Eligibility', 'Hours', 'Walk-ins?', 'Other Info'];
 const LANGUAGES = { es: 'Español', ko: '한국어' };
 
-// Cache for category tile label translations: { langCode: { catKey: translatedLabel } }
+// Cache for tile label translations: { langCode: { typeName: translatedLabel } }
 const tileLabelCache = {};
+// Cache for sub-type label translations: { langCode: { subtype: translatedLabel } }
+const subtypeLabelCache = {};
 
 async function translateTiles() {
   if (!activeLanguage) return;
+
+  // ── Category tile labels ──
   if (!tileLabelCache[activeLanguage]) tileLabelCache[activeLanguage] = {};
-  const cache = tileLabelCache[activeLanguage];
+  const tileCache = tileLabelCache[activeLanguage];
   const slots = document.querySelectorAll('.tile-trans[data-cat]');
   await Promise.all([...slots].map(async slot => {
-    const key = slot.dataset.cat;
-    const cat = CATEGORIES.find(c => c.key === key);
-    if (!cat) return;
-    if (cache[key] === undefined) {
-      cache[key] = await translateField(cat.label, activeLanguage);
+    const typeName = slot.dataset.cat;
+    if (tileCache[typeName] === undefined) {
+      tileCache[typeName] = await translateField(typeName, activeLanguage);
     }
-    const tx = cache[key];
-    if (tx && tx !== cat.label) {
-      slot.innerHTML = `<div class="translation-block">${tx}</div>`;
+    const tx = tileCache[typeName];
+    if (tx && tx !== typeName) slot.innerHTML = `<div class="translation-block">${tx}</div>`;
+  }));
+
+  // ── Sub-type button labels (only visible ones — inside open accordions) ──
+  if (!subtypeLabelCache[activeLanguage]) subtypeLabelCache[activeLanguage] = {};
+  const stCache = subtypeLabelCache[activeLanguage];
+  const stBtns = document.querySelectorAll('.subtype-btn[data-subtype]');
+  await Promise.all([...stBtns].map(async btn => {
+    const st = btn.dataset.subtype;
+    if (stCache[st] === undefined) stCache[st] = await translateField(st, activeLanguage);
+    const tx = stCache[st];
+    if (tx && tx !== st) {
+      const transSpan = btn.querySelector('.subtype-trans');
+      if (transSpan) transSpan.innerHTML = `<div class="translation-block">${tx}</div>`;
     }
   }));
+
+  // ── Emergency banner text ──
+  const emgSlot = document.getElementById('emgTextTrans');
+  if (emgSlot) {
+    const emgText = 'Click here for emergency resources (life-sustaining in next 24 hours?)';
+    if (!tileLabelCache[activeLanguage]['__emg__']) {
+      tileLabelCache[activeLanguage]['__emg__'] = await translateField(emgText, activeLanguage);
+    }
+    const tx = tileLabelCache[activeLanguage]['__emg__'];
+    if (tx && tx !== emgText) emgSlot.innerHTML = `<div class="translation-block">${tx}</div>`;
+    else emgSlot.innerHTML = '';
+  }
 }
 const translationCache = {};   // translationCache[langCode][ridx][field] = text
 let activeLanguage = null;
@@ -1382,6 +1555,7 @@ function setLanguage(langCode) {
   // Clear card + tile caches when language changes
   Object.keys(translationCache).forEach(k => delete translationCache[k]);
   Object.keys(tileLabelCache).forEach(k => delete tileLabelCache[k]);
+  Object.keys(subtypeLabelCache).forEach(k => delete subtypeLabelCache[k]);
   updateLangBtn();
   closeLangDropdown();
   // Re-render current view with new language
@@ -1394,6 +1568,7 @@ function clearLanguage() {
   localStorage.removeItem('cwLanguage');
   Object.keys(translationCache).forEach(k => delete translationCache[k]);
   Object.keys(tileLabelCache).forEach(k => delete tileLabelCache[k]);
+  Object.keys(subtypeLabelCache).forEach(k => delete subtypeLabelCache[k]);
   updateLangBtn();
   closeLangDropdown();
   if (currentCategory) showCategory(currentCategory);
@@ -1435,6 +1610,15 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev10', date: 'May 2026', notes: [
+    'Categories now driven directly by "Resource Type" column — no keyword matching',
+    'Category view redesigned: stacked accordion rectangles instead of square grid',
+    'Click a category to expand it in-place; shows "All" option plus each Sub-Type with count',
+    'Multiple categories can be open simultaneously',
+    'Sub-type labels show inline translation when a language is active',
+    'Emergency banner text updated to "Click here for emergency resources (life-sustaining in next 24 hours?)"',
+    'Emergency banner text shows inline translation when a language is active',
+  ]},
   { version: '0.24-dev09', date: 'May 2026', notes: [
     'Category tiles now show translated label inline when a language is active (same amber-border style as cards)',
     'PWA icon updated to Amber\'s photo',
@@ -1660,9 +1844,7 @@ async function generateResourcePDF(r) {
   const hasWebsite = website && !isNA(website);
 
   // Header bar — color matches category
-  const catKey = getCategoryForResource(r);
-  const catObj = CATEGORIES.find(c => c.key === catKey);
-  const headerHex = catObj ? catObj.color : '#1565c0';
+  const headerHex = getTypeStyle(r['Resource Type'] || '').color;
   const hr = parseInt(headerHex.slice(1,3),16), hg = parseInt(headerHex.slice(3,5),16), hb = parseInt(headerHex.slice(5,7),16);
   doc.setFillColor(hr, hg, hb);
   doc.rect(0, 0, pageW, 13, 'F');
