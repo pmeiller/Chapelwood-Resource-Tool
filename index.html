@@ -1006,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev12';
+const VERSION = '0.24-dev13';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1629,6 +1629,12 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev13', date: 'May 2026', notes: [
+    'Admin: dev tool now publishes to the dev repo instead of production',
+    'Admin: 📋 Duplicate button on each row — opens Add modal pre-filled with copy',
+    'Admin: Resource Type and SubType are now dropdowns (populated from data, no free-text)',
+    'Admin: ＋ Add item button on Type, SubType, and Public Access dropdowns',
+  ]},
   { version: '0.24-dev12', date: 'May 2026', notes: [
     'Emergency banner: removed trailing question mark from text',
     'Emergency banner: translation now clears correctly when switching to English only',
