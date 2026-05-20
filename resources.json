@@ -1824,5 +1824,27 @@
     "Other Info": null,
     "Duplicate?": null,
     "Verified": null
+  },
+  {
+    "Resource Name": "Pet Food Pantry",
+    "Organization Name": "Houston Pets Alive!",
+    "Program Name (If Applicable)": null,
+    "Resource Type": "Pet Resource Assistance",
+    "Resource SubType": "Pets",
+    "Hot List?": null,
+    "Public Access?": "Public Access",
+    "Resource Description": "An organization offering support to pet owners who are struggling financially",
+    "Eligibility": "-Must be 18+ to apply \n-One application per household\n-Must apply before you get there. A team member may follow up before you get there.",
+    "Address": "2800 Antoine #2858 (FRONT of the building), Houston 77092.",
+    "Public Phone Number": null,
+    "Public Email": "info@houstonpetsalive.org",
+    "Public Website": "https://www.houstonpetsalive.org/pet-help/",
+    "Hours": "Saturday from 10am – 1pm",
+    "Walk-ins?": "Yes, but you must register ahead of time",
+    "Languages": "English, Spanish",
+    "Application": "Fill out this form: https://docs.google.com/forms/d/e/1FAIpQLScyryTr8vLm-1l9zq2doTsl8bx5NvLl0pf6d1sRmUpMMn6Zcg/viewform",
+    "Other Info": null,
+    "Duplicate?": null,
+    "Verified": null
   }
 ]
