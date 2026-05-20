@@ -954,7 +954,7 @@
 <div id="emergencyBanner" onclick="toggleEmergency(event)">
   <span class="emergency-icon">🚨</span>
   <div class="emg-center">
-    <span class="emergency-text">Click here for emergency resources (life-sustaining in next 24 hours?)</span>
+    <span class="emergency-text">Click here for emergency resources (life-sustaining in next 24 hours)</span>
     <div id="emgTextTrans"></div>
     <div class="emg-toggle-wrap" onclick="event.stopPropagation()">
       <div class="emg-toggle-labels">
@@ -1006,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev11';
+const VERSION = '0.24-dev12';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1469,7 +1469,7 @@ async function translateTiles() {
   // ── Emergency banner text ──
   const emgSlot = document.getElementById('emgTextTrans');
   if (emgSlot) {
-    const emgText = 'Click here for emergency resources (life-sustaining in next 24 hours?)';
+    const emgText = 'Click here for emergency resources (life-sustaining in next 24 hours)';
     if (!tileLabelCache[activeLanguage]['__emg__']) {
       tileLabelCache[activeLanguage]['__emg__'] = await translateField(emgText, activeLanguage);
     }
@@ -1585,6 +1585,9 @@ function clearLanguage() {
   Object.keys(translationCache).forEach(k => delete translationCache[k]);
   Object.keys(tileLabelCache).forEach(k => delete tileLabelCache[k]);
   Object.keys(subtypeLabelCache).forEach(k => delete subtypeLabelCache[k]);
+  // Clear emergency banner translation
+  const emgSlot = document.getElementById('emgTextTrans');
+  if (emgSlot) emgSlot.innerHTML = '';
   updateLangBtn();
   closeLangDropdown();
   if (currentCategory) showCategory(currentCategory);
@@ -1626,6 +1629,10 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev12', date: 'May 2026', notes: [
+    'Emergency banner: removed trailing question mark from text',
+    'Emergency banner: translation now clears correctly when switching to English only',
+  ]},
   { version: '0.24-dev11', date: 'May 2026', notes: [
     '"All [Type]" accordion buttons now show inline translation when a language is active',
   ]},
@@ -1635,7 +1642,7 @@ const CHANGELOG = [
     'Click a category to expand it in-place; shows "All" option plus each Sub-Type with count',
     'Multiple categories can be open simultaneously',
     'Sub-type labels show inline translation when a language is active',
-    'Emergency banner text updated to "Click here for emergency resources (life-sustaining in next 24 hours?)"',
+    'Emergency banner text updated to "Click here for emergency resources (life-sustaining in next 24 hours)"',
     'Emergency banner text shows inline translation when a language is active',
   ]},
   { version: '0.24-dev09', date: 'May 2026', notes: [
