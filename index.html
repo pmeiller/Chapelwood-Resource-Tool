@@ -1006,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev14';
+const VERSION = '0.25';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1635,6 +1635,14 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.25', date: 'May 2026', notes: [
+    'Production release — all dev10–dev14 changes promoted to prod',
+    'Categories now use Resource Type column directly (accordion layout with sub-types)',
+    'Emergency banner text updated; inline translation for banner, sub-types, and All buttons',
+    'Admin tool: dev/prod auto-detection, Duplicate button, dropdown selects with ＋ Add',
+    'Admin button links correctly to same-repo admin tool',
+    'PWA icon updated to Chapelwood leaves logo',
+  ]},
   { version: '0.24-dev14', date: 'May 2026', notes: [
     'Fix: Admin button in dev now links to dev admin-tool, not prod',
   ]},

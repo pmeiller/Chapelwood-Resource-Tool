@@ -114,11 +114,15 @@ git push
 
 Features:
 - Browse, add, edit, and delete resources
+- **📋 Duplicate button** on each row — opens Add modal pre-filled with copy's data; name prefixed with "Copy of"
 - **Column filter dropdowns** in the table header for: Organization, Hot List, Type, SubType, Access, Verified status
 - **✕ Clear Filters** button appears in the Actions column header when any filter is active
 - **Verified column** shows formatted date (e.g. "May 6, 2026") color-coded green/yellow/red by age (<6mo / 6–12mo / >12mo)
+- **Resource Type and SubType** are dropdown selects populated from existing data; each has a **＋ Add item** button to insert a new option
+- **Public Access** is a fixed dropdown with a **＋ Add item** button for new access types
 - **☁ Publish** — pushes all changes to `resources.json` on GitHub via the Contents API (requires PAT in `localStorage` as `cwGithubToken`)
 - Dirty state tracked in `sessionStorage` (`cwDirty`) — red banner appears when there are unpublished changes; browser close warns if unsaved
+- **Dev/prod auto-detection** — admin tool reads `window.location.pathname` to determine which GitHub repo to publish to; no hardcoded URLs
 
 The Publish button uses the GitHub Contents API (`PUT /repos/.../contents/resources.json`). PAT needs **Contents: Read and write** scope (fine-grained) or **repo** scope (classic).
 
@@ -126,10 +130,17 @@ The Publish button uses the GitHub Contents API (`PUT /repos/.../contents/resour
 
 ## Public Viewer (`index.html`)
 
-### Category Browsing
-- Tiles show resource count per category
-- Each tile has a **4px colored left border** in that category's color (mirrors the card style)
-- Clicking a tile shows all resources in that category as cards
+### Category Browsing (Accordion)
+- Categories are derived directly from `r['Resource Type']` — no keyword matching
+- Displayed as **stacked accordion rectangles** (single column), each with emoji, name, resource count, and ▸ chevron
+- Each tile has a **4px colored left border** in its category color
+- **`TYPE_STYLES`** map: keyed on exact Resource Type strings, provides emoji + color; `DEFAULT_TYPE_STYLE` fallback for unknown types
+- Clicking a category header **expands it in-place** (accordion); multiple categories can be open simultaneously
+- Expanded panel shows:
+  - **All [Type] (N)** button — shows all resources in that category
+  - One button per unique **Resource SubType** with count
+  - Inline translation for category label, "All" button, and each sub-type when a language is active
+- `openCategories` Set tracks which types are expanded; rebuilt on each `buildCategoryTiles()` call
 - Each card has a colored left border in the category color
 - Each card has: name, org, access badge, description, eligibility, hours, walk-ins, languages, website/phone/map/PDF buttons
 
@@ -147,13 +158,15 @@ Fields render in this order, each as a bold-label / value row:
 - Searches across: Resource Name, Description, Organization, Eligibility, Type, SubType, Address, Languages
 
 ### Emergency Mode
-- Orange banner between search bar and category grid
+- Orange banner between search bar and category grid; text: *"Click here for emergency resources (life-sustaining in next 24 hours)"*
+- Banner text shows inline translation when a language is active
 - Yes/No toggle on the right
 - **When Yes:**
   - Page background turns light orange
-  - Category tiles update counts to show only hot-list resources
-  - Tiles with zero hot-list resources are grayed out and non-clickable
-  - Clicking an active tile shows only that category's hot-list resources
+  - Category accordion updates counts to show only hot-list resources
+  - Categories with zero hot-list resources are grayed out and non-clickable
+  - Sub-type buttons with zero hot-list resources are hidden
+  - Clicking "All [Type]" or a sub-type shows only hot-list resources in that scope
 - Emergency mode does not persist across page loads
 
 ### Secondary Language Support (Translation)
@@ -251,10 +264,11 @@ The app installs as a PWA on Android and iOS via "Add to Home Screen."
 
 **Update notification:** When a new SW version is detected (`updatefound` event), an `#swUpdateBanner` div is shown above the search bar with a Refresh button.
 
-**Dev vs. production paths:** `manifest.json` and `sw.js` use hardcoded path prefixes. The dev versions use `/Chapelwood-Resource-Tool-Dev/`. When promoting to production:
+**Dev vs. production paths:** `manifest.json` and `sw.js` use hardcoded path prefixes. When promoting to production:
 1. Update `start_url` and `scope` in `manifest.json` to `/Chapelwood-Resource-Tool/`
 2. Update all paths in `SHELL_FILES` and `DATA_FILES` in `sw.js` to `/Chapelwood-Resource-Tool/`
-3. Bump `CACHE_NAME` in `sw.js` (e.g. `cw-resources-v1` → `cw-resources-v2`) to force cache refresh
+3. Bump `CACHE_NAME` in `sw.js` (e.g. `cw-resources-v2` → `cw-resources-v3`) to force cache refresh
+4. Revert to `/Chapelwood-Resource-Tool-Dev/` in both files after pushing, for continued dev work
 
 **What works offline:** Category browsing, search, emergency mode, admin shell (password screen). PDF without map, since jsPDF loads from cdnjs.
 
@@ -269,6 +283,8 @@ The app installs as a PWA on Android and iOS via "Add to Home Screen."
 - **GitHub PAT** — stored in `localStorage` (`cwGithubToken`) in the browser; never committed to the repo
 - **Dirty state** — admin tool tracks unsaved changes in `sessionStorage` (`cwDirty`); persists through same-tab reloads, resets on fresh session
 - **Translation cache** — session-scoped JS object `translationCache[langCode][ridx][field]`; not persisted to localStorage
+- **Tile label cache** — `tileLabelCache[langCode][typeName]` for category accordion headers; `__emg__` key for emergency banner
+- **Subtype label cache** — `subtypeLabelCache[langCode][subtypeOrPhrase]` for sub-type buttons and "All [Type]" buttons
 - **MyMemory API** — registered-email tier (~50k words/day); `&de=pmeiller@chapelwood.org` param in every request; yellow cap warning banner on 429; silent English fallback on individual errors
 - **Map tiles** — OSM tiles at `https://tile.openstreetmap.org/{z}/{x}/{y}.png` have `Access-Control-Allow-Origin: *`; used for in-browser canvas map generation for PDFs. Geocoding via Nominatim (no API key required).
 - **PDF libraries** — jsPDF 2.5.1 + qrcode-generator 1.4.4, loaded on demand from cdnjs
