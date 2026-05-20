@@ -925,7 +925,7 @@
     </div>
   </div>
   <a href="https://referral.unitedwayhouston.org/" target="_blank" rel="noopener" class="admin-btn">211 Website</a>
-  <a href="https://pmeiller.github.io/Chapelwood-Resource-Tool/admin-tool.html" class="admin-btn">Admin</a>
+  <a id="adminLink" class="admin-btn">Admin</a>
 </header>
 
 <div id="translationCapBanner">
@@ -1006,7 +1006,7 @@
 
 <script>
 // ── RESOURCES DATA ──────────────────────────────────────────────────────────
-const VERSION = '0.24-dev13';
+const VERSION = '0.24-dev14';
 const RESOURCES_JSON_URL = './resources.json';
 
 async function fetchResourcesData() {
@@ -1621,6 +1621,12 @@ document.addEventListener('click', e => {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.getElementById('footerVersion').textContent = VERSION;
+// Admin link: point to same repo this page is served from
+(function() {
+  const base = window.location.pathname.replace(/\/[^/]*$/, '/');
+  const adminLink = document.getElementById('adminLink');
+  if (adminLink) adminLink.href = base + 'admin-tool.html';
+})();
 buildCategoryTiles();
 fetchResourcesData();
 // Restore saved language preference
@@ -1629,6 +1635,9 @@ if (_savedLang && LANGUAGES[_savedLang]) { activeLanguage = _savedLang; updateLa
 
 // ── CHANGELOG ─────────────────────────────────────────────────────────────────
 const CHANGELOG = [
+  { version: '0.24-dev14', date: 'May 2026', notes: [
+    'Fix: Admin button in dev now links to dev admin-tool, not prod',
+  ]},
   { version: '0.24-dev13', date: 'May 2026', notes: [
     'Admin: dev tool now publishes to the dev repo instead of production',
     'Admin: 📋 Duplicate button on each row — opens Add modal pre-filled with copy',
