@@ -1779,7 +1779,7 @@
     "Application": "Just show up during pantry hours with ID",
     "Other Info": "Double check for if they're open, as holidays may impact availability. \nBetter to email than to call.",
     "Duplicate?": null,
-    "Verified": null
+    "Verified": "2026/05/20"
   },
   {
     "Resource Name": "TEST",
@@ -1845,6 +1845,6 @@
     "Application": "Fill out this form: https://docs.google.com/forms/d/e/1FAIpQLScyryTr8vLm-1l9zq2doTsl8bx5NvLl0pf6d1sRmUpMMn6Zcg/viewform",
     "Other Info": null,
     "Duplicate?": null,
-    "Verified": null
+    "Verified": "2026-05-26"
   }
 ]
