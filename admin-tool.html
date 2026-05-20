@@ -1287,6 +1287,8 @@ function openCopyModal(index) {
   const r = resources[index];
   populateTypeSelects(r['Resource Type'] || '', r['Resource SubType'] || '');
   populateForm(r);  // pre-fill with copy's data
+  const nameEl = document.getElementById('f_name');
+  if (nameEl) nameEl.value = 'Copy of ' + (nameEl.value || '');
   openModal('editModal');
 }
 
