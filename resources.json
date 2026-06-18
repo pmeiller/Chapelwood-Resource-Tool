@@ -2836,5 +2836,27 @@
     "Other Info": null,
     "Duplicate?": null,
     "Verified": "Wed Jun 17 2026 00:00:00 GMT-0500 (Central Daylight Time)"
+  },
+  {
+    "Resource Name": "Behavioral Health Care",
+    "Organization Name": "Spring Branch Community Health Center",
+    "Program Name (If Applicable)": null,
+    "Resource Type": "Mental Health",
+    "Resource SubType": "Counseling/Therapy",
+    "Hot List?": "NO",
+    "Public Access?": "Public Access",
+    "Resource Description": "Community health center with several services, but a lot around basic behavioral healthcare. Appointments for uninsured and underinsured folks, too. Counseling for children, couples, families, sexual assault, domestic violence.",
+    "Eligibility": "n/a, but call to make an appointment",
+    "Address": "Several locations depending on service",
+    "Public Phone Number": "713-462-6565",
+    "Public Email": "info@sbch.net",
+    "Public Website": "https://sbchc.net/contact/",
+    "Hours": "M-F 8am-5pm",
+    "Walk-ins?": "No",
+    "Languages": "English, Spanish",
+    "Application": "Make an appointment online or call.",
+    "Other Info": null,
+    "Duplicate?": null,
+    "Verified": "Thu Jun 18 2026 00:00:00 GMT-0500 (Central Daylight Time)"
   }
 ]
